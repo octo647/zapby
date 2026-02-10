@@ -1,0 +1,14 @@
+{
+  "name": "agendazap-whatsapp-bot",
+  "version": "1.0.0",
+  "description": "Bot de lembretes de agendamento - AgendaZap",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@whiskeysockets/baileys": "^6.7.0",
+    "qrcode-terminal": "^0.12.0"
+  }
+}
