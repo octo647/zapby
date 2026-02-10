@@ -16,7 +16,7 @@
                     <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
                 </svg>
             </div>
-            <h1 class="text-3xl font-bold text-gray-900 mb-2">Código Enviado!</h1>
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">Confirme seu WhatsApp</h1>
             <p class="text-gray-600">Verifique seu WhatsApp</p>
         </div>
 
@@ -33,7 +33,7 @@
             <p class="text-xs mt-1">O código expira em 10 minutos</p>
         </div>
 
-        <form method="POST" action="{{ route('professional.verify-code') }}" id="verifyForm">
+        <form method="POST" action="{{ route('professional.verify-registration') }}" id="verifyForm">
             @csrf
 
             <div class="mb-6">
@@ -62,29 +62,14 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
                 </svg>
-                Verificar Código
+                Confirmar e Criar Conta
             </button>
         </form>
 
         <div class="mt-6 text-center">
-            <a href="{{ route('professional.login') }}" class="text-sm text-indigo-600 hover:text-indigo-700 transition">
-                ← Voltar para login
+            <a href="{{ route('professional.register') }}" class="text-sm text-indigo-600 hover:text-indigo-700 transition">
+                ← Voltar
             </a>
-            <div class="mt-4 pt-4 border-t border-gray-200">
-                <p class="text-xs text-gray-600">
-                    Não recebeu o código?
-                </p>
-                <form method="POST" action="{{ route('professional.request-code') }}" class="mt-2">
-                    @csrf
-                    <input type="hidden" name="whatsapp" value="{{ session('verification_whatsapp') }}">
-                    <button 
-                        type="submit"
-                        class="text-sm text-green-600 hover:text-green-700 font-medium transition"
-                    >
-                        Reenviar código
-                    </button>
-                </form>
-            </div>
         </div>
     </div>
 

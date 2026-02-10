@@ -27,10 +27,10 @@
             </div>
         @endif
 
-        <form method="POST" action="{{ route('professional.request-code') }}">
+        <form method="POST" action="{{ route('professional.login') }}">
             @csrf
 
-            <div class="mb-6">
+            <div class="mb-4">
                 <label for="whatsapp" class="block text-sm font-medium text-gray-700 mb-2">
                     📱 Número do WhatsApp
                 </label>
@@ -45,31 +45,53 @@
                     class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     oninput="this.value = formatPhone(this.value)"
                 >
-                <p class="mt-1 text-xs text-gray-500">Digite seu número cadastrado</p>
+            </div>
+
+            <div class="mb-6">
+                <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+                    🔒 Senha
+                </label>
+                <input 
+                    type="password" 
+                    id="password" 
+                    name="password" 
+                    required
+                    placeholder="Digite sua senha"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                >
+            </div>
+
+            <div class="flex items-center justify-between mb-6">
+                <label class="flex items-center">
+                    <input type="checkbox" name="remember" class="rounded border-gray-300 text-green-600 shadow-sm focus:ring-green-500">
+                    <span class="ml-2 text-sm text-gray-600">Lembrar de mim</span>
+                </label>
             </div>
 
             <button 
                 type="submit"
-                class="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 px-6 rounded-lg font-semibold hover:from-green-600 hover:to-green-700 transition duration-200 shadow-lg flex items-center justify-center"
+                class="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 px-6 rounded-lg font-semibold hover:from-green-600 hover:to-green-700 transition duration-200 shadow-lg"
             >
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                    <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-                </svg>
-                Receber Código de Acesso
+                Entrar
             </button>
         </form>
 
         <div class="mt-6 text-center">
-            <div class="flex items-center justify-center space-x-2 text-sm text-gray-600">
+            <p class="text-sm text-gray-600">
+                Não tem uma conta?
+            </p>
+            <a href="{{ route('professional.register') }}" class="text-green-600 hover:text-green-700 font-semibold transition">
+                Cadastre-se agora
+            </a>
+        </div>
+
+        <div class="mt-4 pt-4 border-t border-gray-200 text-center">
+            <div class="flex items-center justify-center space-x-2 text-xs text-gray-500">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-green-500" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
                 </svg>
                 <span>Login seguro via WhatsApp</span>
             </div>
-            <p class="text-xs text-gray-500 mt-2">
-                Você receberá um código de 6 dígitos
-            </p>
         </div>
     </div>
 

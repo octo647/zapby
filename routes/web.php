@@ -13,11 +13,16 @@ Route::get('/', function () {
 
 // Professional Auth Routes
 Route::prefix('professional')->group(function () {
+    // Login
     Route::get('/login', [ProfessionalAuthController::class, 'showLoginForm'])->name('professional.login');
     Route::post('/login', [ProfessionalAuthController::class, 'login']);
-    Route::post('/request-code', [ProfessionalAuthController::class, 'requestCode'])->name('professional.request-code');
-    Route::get('/verify-code', [ProfessionalAuthController::class, 'showVerifyCodeForm'])->name('professional.verify-code');
-    Route::post('/verify-code', [ProfessionalAuthController::class, 'verifyCode']);
+    
+    // Register
+    Route::get('/register', [ProfessionalAuthController::class, 'showRegisterForm'])->name('professional.register');
+    Route::post('/register', [ProfessionalAuthController::class, 'register']);
+    Route::get('/verify-registration', [ProfessionalAuthController::class, 'showVerifyRegistrationForm'])->name('professional.verify-registration');
+    Route::post('/verify-registration', [ProfessionalAuthController::class, 'verifyRegistration']);
+    
     Route::post('/logout', [ProfessionalAuthController::class, 'logout'])->name('professional.logout');
     
     // Protected routes
