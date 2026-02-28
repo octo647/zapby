@@ -234,8 +234,16 @@ Route::get('/client-appointments', function(Request $request) {
         $today = $now->format('Y-m-d');
         $currentTime = $now->format('H:i:s'); // Usar formato completo com segundos
         
+        // Preparar variações do número (com e sem código do país)
+        $phoneVariations = [$whatsapp];
+        if (str_starts_with($whatsapp, '55')) {
+            $phoneVariations[] = substr($whatsapp, 2); // Remove o 55
+        } else {
+            $phoneVariations[] = '55' . $whatsapp; // Adiciona o 55
+        }
+        
         // Buscar agendamentos futuros ou de hoje
-        $appointments = Appointment::where('client_whatsapp', $whatsapp)
+        $appointments = Appointment::whereIn('client_whatsapp', $phoneVariations)
             ->where(function($query) use ($today, $currentTime) {
                 $query->where('date', '>', $today)
                     ->orWhere(function($q) use ($today, $currentTime) {
@@ -290,8 +298,16 @@ Route::get('/client-professionals', function(Request $request) {
     }
     
     try {
+        // Preparar variações do número (com e sem código do país)
+        $phoneVariations = [$whatsapp];
+        if (str_starts_with($whatsapp, '55')) {
+            $phoneVariations[] = substr($whatsapp, 2); // Remove o 55
+        } else {
+            $phoneVariations[] = '55' . $whatsapp; // Adiciona o 55
+        }
+        
         // Buscar IDs únicos de profissionais com quem o cliente já agendou
-        $professionalIds = Appointment::where('client_whatsapp', $whatsapp)
+        $professionalIds = Appointment::whereIn('client_whatsapp', $phoneVariations)
             ->distinct()
             ->pluck('professional_id');
         
