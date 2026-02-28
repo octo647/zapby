@@ -35,29 +35,30 @@ class SendAppointmentReminder implements ShouldQueue
                 'phone' => $phone,
             ]);
 
-            // Caminho do arquivo (raiz de storage/app/)
-            $filePath = storage_path('app/appointment_reminders.json');
+            // Usar o arquivo de comandos que o bot já processa
+            $filePath = storage_path('app/whatsapp_commands.json');
             
-            // Lê arquivo de lembretes existente ou cria novo
-            $reminders = file_exists($filePath)
+            // Lê arquivo de comandos existente ou cria novo
+            $commands = file_exists($filePath)
                 ? json_decode(file_get_contents($filePath), true)
                 : [];
 
             // Formata a mensagem do lembrete
             $message = $this->formatMessage();
 
-            // Adiciona novo lembrete
-            $reminders[] = [
-                'phone' => $phone,
+            // Adiciona comando para enviar mensagem
+            $commands[] = [
+                'type' => 'send_message',
+                'to' => $phone,
                 'message' => $message,
             ];
 
             // Salva arquivo para o bot ler
-            file_put_contents($filePath, json_encode($reminders, JSON_PRETTY_PRINT));
+            file_put_contents($filePath, json_encode($commands, JSON_PRETTY_PRINT));
 
             Log::info('Reminder queued for WhatsApp bot', [
                 'appointment_id' => $this->appointment->id,
-                'total_reminders' => count($reminders),
+                'total_commands' => count($commands),
             ]);
 
         } catch (\Exception $e) {
