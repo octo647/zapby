@@ -14,33 +14,44 @@ class SendAppointmentReminders extends Command
      *
      * @var string
      */
-    protected $signature = 'appointments:send-reminders';
+    protected $signature = 'appointments:send-reminders {--hours=24 : Horas antes do agendamento}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Envia lembretes de agendamentos para clientes (24h antes)';
+    protected $description = 'Envia lembretes de agendamentos para clientes';
 
     /**
      * Execute the console command.
      */
     public function handle()
     {
-        $tomorrow = Carbon::tomorrow()->format('Y-m-d');
+        $hours = (int) $this->option('hours');
+        $targetDateTime = Carbon::now()->addHours($hours);
+        
+        $this->info("Buscando agendamentos para aproximadamente {$hours} horas à frente...");
+        $this->info("Data/hora alvo: " . $targetDateTime->format('d/m/Y H:i'));
 
-        $appointments = Appointment::where('date', $tomorrow)
+        // Buscar agendamentos na data/hora alvo (com margem de 1 hora)
+        $startTime = $targetDateTime->copy()->subMinutes(30);
+        $endTime = $targetDateTime->copy()->addMinutes(30);
+
+        $appointments = Appointment::where('date', $targetDateTime->format('Y-m-d'))
+            ->whereTime('time', '>=', $startTime->format('H:i:s'))
+            ->whereTime('time', '<=', $endTime->format('H:i:s'))
             ->whereIn('status', ['pending', 'confirmed'])
             ->get();
 
         $count = 0;
         foreach ($appointments as $appointment) {
-            SendAppointmentReminder::dispatch($appointment);
+            SendAppointmentReminder::dispatch($appointment, $hours);
+            $this->info("Lembrete enviado: {$appointment->client_name} - {$appointment->time}");
             $count++;
         }
 
-        $this->info("Enviados {$count} lembretes de agendamento.");
+        $this->info("✅ Enviados {$count} lembretes de agendamento ({$hours}h antes).");
 
         return Command::SUCCESS;
     }

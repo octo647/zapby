@@ -16,7 +16,8 @@ class SendAppointmentReminder implements ShouldQueue
      * Create a new job instance.
      */
     public function __construct(
-        public Appointment $appointment
+        public Appointment $appointment,
+        public int $hoursBeforeAppointment = 24
     ) {
     }
 
@@ -91,11 +92,19 @@ class SendAppointmentReminder implements ShouldQueue
     private function formatMessage(): string
     {
         $professionalName = $this->appointment->professional->name ?? 'Profissional';
-        $date = $this->appointment->date->format('d/m/Y');
-        $time = $this->appointment->time->format('H:i');
+        $dateObj = is_string($this->appointment->date) ? \Carbon\Carbon::parse($this->appointment->date) : $this->appointment->date;
+        $timeObj = is_string($this->appointment->time) ? \Carbon\Carbon::parse($this->appointment->time) : $this->appointment->time;
+        $date = $dateObj->format('d/m/Y');
+        $time = $timeObj->format('H:i');
         $duration = $this->appointment->duration;
         
-        $message = "🗓️ *Lembrete de Agendamento*\n\n";
+        // Mensagem diferente dependendo do tempo
+        if ($this->hoursBeforeAppointment <= 2) {
+            $message = "⏰ *Lembrete: Seu agendamento é daqui a {$this->hoursBeforeAppointment} horas!*\n\n";
+        } else {
+            $message = "🗓️ *Lembrete de Agendamento*\n\n";
+        }
+        
         $message .= "Olá *{$this->appointment->client_name}*!\n\n";
         $message .= "Você tem um agendamento marcado:\n\n";
         $message .= "👤 Profissional: *{$professionalName}*\n";
@@ -105,6 +114,10 @@ class SendAppointmentReminder implements ShouldQueue
         
         if ($this->appointment->notes) {
             $message .= "📝 Observações: {$this->appointment->notes}\n\n";
+        }
+        
+        if ($this->hoursBeforeAppointment <= 2) {
+            $message .= "🚨 *Não se esqueça!* Seu horário está chegando.\n\n";
         }
         
         $message .= "Por favor, confirme sua presença ou avise caso precise remarcar.\n\n";
