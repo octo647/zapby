@@ -36,7 +36,7 @@ class ProfessionalSeeder extends Seeder
         Subscription::create([
             'professional_id' => $professional->id,
             'status' => 'trial',
-            'amount' => 14.90,
+            'amount' => 19.90,
         ]);
 
         $this->command->info('Profissional de exemplo criado!');

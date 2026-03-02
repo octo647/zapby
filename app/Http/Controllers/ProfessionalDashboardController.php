@@ -61,27 +61,70 @@ class ProfessionalDashboardController extends Controller
         $professional = Auth::guard('professional')->user();
 
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'profession' => 'required|string|max:255',
+            'name' => 'nullable|string|max:255',
+            'profession' => 'nullable|string|max:255',
             'whatsapp' => 'nullable|string|max:20',
-            'working_days' => 'required|array',
+            'working_days' => 'nullable|array',
             'working_days.*' => 'integer|between:0,6',
-            'working_hours_start' => 'required|date_format:H:i',
-            'working_hours_end' => 'required|date_format:H:i|after:working_hours_start',
-            'default_duration' => 'required|integer|min:15|max:240',
+            'working_hours_start' => 'nullable|date_format:H:i',
+            'working_hours_end' => 'nullable|date_format:H:i|after:working_hours_start',
+            'services' => 'nullable|array|min:1',
+            'services.*.name' => 'required|string|max:255',
+            'services.*.price' => 'required|numeric|min:0',
+            'services.*.duration' => 'required|integer|min:15|max:480',
         ]);
 
-        $professional->update([
-            'name' => $validated['name'],
-            'profession' => $validated['profession'],
-            'whatsapp' => $validated['whatsapp'],
-            'working_days' => json_encode($validated['working_days']),
-            'working_hours' => json_encode([
+        $dataToUpdate = [];
+
+        // Atualizar name se fornecido
+        if (isset($validated['name'])) {
+            $dataToUpdate['name'] = $validated['name'];
+        }
+
+        // Atualizar profession se fornecido
+        if (isset($validated['profession'])) {
+            $dataToUpdate['profession'] = $validated['profession'];
+        }
+
+        // Atualizar whatsapp se fornecido
+        if (isset($validated['whatsapp'])) {
+            $dataToUpdate['whatsapp'] = $validated['whatsapp'];
+        }
+
+        // Atualizar working_days se fornecido
+        if (isset($validated['working_days'])) {
+            // Converter explicitamente para inteiros
+            $dataToUpdate['working_days'] = array_map('intval', $validated['working_days']);
+        }
+
+        // Atualizar working_hours se fornecido
+        if (isset($validated['working_hours_start']) && isset($validated['working_hours_end'])) {
+            $dataToUpdate['working_hours'] = [
                 'start' => $validated['working_hours_start'],
                 'end' => $validated['working_hours_end'],
-            ]),
-            'default_duration' => $validated['default_duration'],
-        ]);
+            ];
+        }
+
+        // Atualizar services se fornecido
+        if (isset($validated['services'])) {
+            // Filtrar e processar serviços
+            $services = array_filter($validated['services'], function($service) {
+                return !empty(trim($service['name']));
+            });
+            
+            // Reindexar array e garantir formato correto
+            $services = array_values(array_map(function($service) {
+                return [
+                    'name' => trim($service['name']),
+                    'price' => floatval($service['price']),
+                    'duration' => intval($service['duration'])
+                ];
+            }, $services));
+            
+            $dataToUpdate['services'] = $services;
+        }
+
+        $professional->update($dataToUpdate);
 
         return back()->with('success', 'Configurações atualizadas com sucesso!');
     }

@@ -1,4 +1,4 @@
-# 🤖 AgendaZap WhatsApp Bot
+# 🤖 Zapby WhatsApp Bot
 
 Bot de lembretes automáticos para agendamentos usando Baileys.
 
@@ -68,7 +68,7 @@ Storage::put('appointment_reminders.json', json_encode($reminders));
 ## 🔄 Rodar como Serviço (Systemd)
 
 ```bash
-sudo tee /etc/systemd/system/agendazap-whatsapp.service > /dev/null << 'EOF'
+sudo tee /etc/systemd/system/zapby-whatsapp.service > /dev/null << 'EOF'
 [Unit]
 Description=AgendaZap WhatsApp Bot
 After=network.target
@@ -76,7 +76,7 @@ After=network.target
 [Service]
 Type=simple
 User=helder
-WorkingDirectory=/home/helder/projetos/agendazap/whatsapp-bot
+WorkingDirectory=/home/helder/projetos/zapby/whatsapp-bot
 ExecStart=/usr/bin/node index.js
 Restart=on-failure
 RestartSec=10
@@ -86,18 +86,18 @@ WantedBy=multi-user.target
 EOF
 
 sudo systemctl daemon-reload
-sudo systemctl enable agendazap-whatsapp
-sudo systemctl start agendazap-whatsapp
+sudo systemctl enable zapby-whatsapp
+sudo systemctl start zapby-whatsapp
 ```
 
 ### Ver logs:
 ```bash
-sudo journalctl -u agendazap-whatsapp -f
+sudo journalctl -u zapby-whatsapp -f
 ```
 
 ### Parar serviço:
 ```bash
-sudo systemctl stop agendazap-whatsapp
+sudo systemctl stop zapby-whatsapp
 ```
 
 ## 🐛 Troubleshooting

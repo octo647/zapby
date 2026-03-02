@@ -27,12 +27,24 @@ class SendAppointmentReminder implements ShouldQueue
     public function handle(): void
     {
         try {
+            // Verificar se já enviamos este lembrete hoje
+            $cacheKey = "reminder_sent_{$this->appointment->id}_{$this->hoursBeforeAppointment}h_" . now()->format('Y-m-d');
+            
+            if (cache()->has($cacheKey)) {
+                Log::info('Reminder already sent today', [
+                    'appointment_id' => $this->appointment->id,
+                    'hours' => $this->hoursBeforeAppointment,
+                ]);
+                return;
+            }
+            
             $phone = $this->formatPhone($this->appointment->client_whatsapp);
             
             Log::info('Sending WhatsApp reminder', [
                 'appointment_id' => $this->appointment->id,
                 'customer' => $this->appointment->client_name,
                 'phone' => $phone,
+                'hours_before' => $this->hoursBeforeAppointment,
             ]);
 
             // Usar o arquivo de comandos que o bot já processa
@@ -55,6 +67,9 @@ class SendAppointmentReminder implements ShouldQueue
 
             // Salva arquivo para o bot ler
             file_put_contents($filePath, json_encode($commands, JSON_PRETTY_PRINT));
+
+            // Marcar como enviado (expira em 25 horas)
+            cache()->put($cacheKey, true, now()->addHours(25));
 
             Log::info('Reminder queued for WhatsApp bot', [
                 'appointment_id' => $this->appointment->id,

@@ -1,9 +1,9 @@
 #!/bin/bash
-# Inicia o bot WhatsApp do AgendaZap
+# Inicia o bot WhatsApp do Zapby
 
-cd "$(dirname "$0")"
+cd "$(dirname "$0)")
 
-echo "🚀 Iniciando AgendaZap WhatsApp Bot..."
+echo "🚀 Iniciando Zapby WhatsApp Bot..."
 echo ""
 
 # Verificar se node_modules existe

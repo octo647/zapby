@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('asaas_subscription_id')->nullable();
             $table->string('status')->default('trial'); // trial, active, cancelled, suspended
             $table->date('next_due_date')->nullable();
-            $table->decimal('amount', 10, 2)->default(14.90);
+            $table->decimal('amount', 10, 2)->default(19.90);
             $table->timestamps();
         });
     }

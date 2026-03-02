@@ -6,11 +6,11 @@ use Illuminate\Support\Facades\Log;
 
 class WhatsAppService
 {
-    protected $remindersFile;
+    protected $commandsFile;
 
     public function __construct()
     {
-        $this->remindersFile = storage_path('app/appointment_reminders.json');
+        $this->commandsFile = storage_path('app/whatsapp_commands.json');
     }
 
     /**
@@ -22,28 +22,30 @@ class WhatsAppService
             // Formatar telefone para padrão internacional
             $phone = $this->formatPhoneNumber($phoneNumber);
             
-            // Ler arquivo de lembretes existente
-            $reminders = [];
-            if (file_exists($this->remindersFile)) {
-                $content = file_get_contents($this->remindersFile);
+            // Ler arquivo de comandos existente
+            $commands = [];
+            if (file_exists($this->commandsFile)) {
+                $content = file_get_contents($this->commandsFile);
                 if (!empty($content)) {
-                    $reminders = json_decode($content, true) ?? [];
+                    $commands = json_decode($content, true) ?? [];
                 }
             }
             
-            // Adicionar nova mensagem
-            $reminders[] = [
-                'phone' => $phone,
-                'message' => $message
+            // Adicionar novo comando no formato esperado pelo bot
+            $commands[] = [
+                'type' => 'send_message',
+                'to' => $phone,
+                'message' => $message,
+                'timestamp' => time()
             ];
             
             // Salvar arquivo
             file_put_contents(
-                $this->remindersFile, 
-                json_encode($reminders, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
+                $this->commandsFile, 
+                json_encode($commands, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
             );
 
-            Log::info('WhatsApp message queued', [
+            Log::info('WhatsApp command queued', [
                 'phone' => $phone,
                 'message' => substr($message, 0, 100)
             ]);

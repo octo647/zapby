@@ -52,7 +52,7 @@ class WhatsAppBotService
         $greeting = $name ? "Olá {$name}!" : "Olá!";
         
         $message = "{$greeting} 👋\n\n";
-        $message .= "Bem-vindo ao *AgendaPro*!\n\n";
+        $message .= "Bem-vindo ao *Zapby*!\n\n";
         $message .= "Sou um assistente para agendamentos.\n\n";
         $message .= "O que você gostaria de fazer?\n\n";
         $message .= "1️⃣ Criar minha agenda (profissionais)\n";
@@ -402,7 +402,7 @@ class WhatsAppBotService
                 $response .= "⏱️ Duração: {$professional->default_duration} min\n\n";
                 $response .= "🔗 *Seu link:*\n{$link}\n\n";
                 $response .= "Compartilhe este link com seus clientes!\n\n";
-                $response .= "✨ 14 dias grátis! Depois R$ 14,90/mês\n\n";
+                $response .= "✨ 14 dias grátis! Depois R$ 19,90/mês\n\n";
                 $response .= "Digite *menu* para acessar seus agendamentos";
                 
                 $this->whatsappService->sendMessage($phone, $response);

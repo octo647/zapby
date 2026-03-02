@@ -15,8 +15,8 @@ class WPPConnectService
     public function __construct()
     {
         $this->baseUrl = config('services.wppconnect.url', 'http://69.6.222.77:21465');
-        $this->secretKey = config('services.wppconnect.secret', 'AgendaZap2026Secret');
-        $this->session = config('services.wppconnect.session', 'agendazap');
+        $this->secretKey = config('services.wppconnect.secret', 'Zapby2026Secret');
+        $this->session = config('services.wppconnect.session', 'zapby');
     }
 
     /**
@@ -215,7 +215,7 @@ class WPPConnectService
         string $dateTime,
         ?string $serviceName = null
     ): bool {
-        $message = "🔔 *Lembrete de Agendamento - AgendaZap*\n\n";
+        $message = "🔔 *Lembrete de Agendamento - Zapby*\n\n";
         $message .= "Olá! Você tem um agendamento confirmado:\n\n";
         $message .= "👤 *Profissional:* {$professionalName}\n";
         
@@ -225,7 +225,7 @@ class WPPConnectService
         
         $message .= "📅 *Data/Hora:* {$dateTime}\n\n";
         $message .= "⚠️ Caso precise remarcar ou cancelar, entre em contato o quanto antes.\n\n";
-        $message .= "_Mensagem automática - AgendaZap Pro_";
+        $message .= "_Mensagem automática - Zapby Pro_";
 
         $result = $this->sendMessage($phone, $message);
 
@@ -241,7 +241,7 @@ class WPPConnectService
         string $dateTime,
         ?string $serviceName = null
     ): bool {
-        $message = "✅ *Agendamento Confirmado - AgendaZap*\n\n";
+        $message = "✅ *Agendamento Confirmado - Zapby*\n\n";
         $message .= "Seu agendamento foi confirmado com sucesso!\n\n";
         $message .= "👤 *Profissional:* {$professionalName}\n";
         
@@ -251,7 +251,7 @@ class WPPConnectService
         
         $message .= "📅 *Data/Hora:* {$dateTime}\n\n";
         $message .= "Você receberá um lembrete próximo ao horário do agendamento.\n\n";
-        $message .= "_Mensagem automática - AgendaZap Pro_";
+        $message .= "_Mensagem automática - Zapby Pro_";
 
         $result = $this->sendMessage($phone, $message);
 

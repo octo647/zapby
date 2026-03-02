@@ -46,6 +46,8 @@ Route::get('/validate-access-key', function(Request $request) {
             'profession' => $professional->profession,
             'slug' => $professional->slug,
             'whatsapp' => $professional->whatsapp,
+            'working_days' => $professional->working_days,
+            'working_hours' => $professional->working_hours,
         ]
     ]);
 });
@@ -127,11 +129,39 @@ Route::get('/available-times', function(Request $request) {
         return response()->json(['success' => false, 'message' => 'Profissional não encontrado']);
     }
     
-    // Gerar horários de 08:00 às 18:00 (intervalo de 30 minutos)
+    // Verificar se o profissional trabalha neste dia da semana
+    $dayOfWeek = \Carbon\Carbon::parse($date)->dayOfWeek;
+    $workingDays = $professional->working_days ?? [];
+    
+    // Converter strings para inteiros se necessário
+    $workingDays = array_map('intval', $workingDays);
+    
+    if (!in_array($dayOfWeek, $workingDays, true)) {
+        return response()->json(['success' => true, 'times' => [], 'message' => 'Profissional não trabalha neste dia']);
+    }
+    
+    // Obter horários de trabalho do profissional
+    $workingHours = $professional->working_hours ?? ['start' => '08:00', 'end' => '18:00'];
+    $startHour = intval(explode(':', $workingHours['start'])[0]);
+    $startMinute = intval(explode(':', $workingHours['start'])[1]);
+    $endHour = intval(explode(':', $workingHours['end'])[0]);
+    $endMinute = intval(explode(':', $workingHours['end'])[1]);
+    
+    // Gerar horários dentro do horário de trabalho do profissional
     $times = [];
-    for ($hour = 8; $hour <= 18; $hour++) {
+    for ($hour = $startHour; $hour <= $endHour; $hour++) {
         foreach (['00', '30'] as $minute) {
-            if ($hour == 18 && $minute == '30') break; // Parar em 18:00
+            $intMinute = intval($minute);
+            
+            // Pular se antes do horário de início
+            if ($hour == $startHour && $intMinute < $startMinute) {
+                continue;
+            }
+            
+            // Parar se após o horário de fim
+            if ($hour == $endHour && $intMinute >= $endMinute) {
+                break;
+            }
             
             $time = sprintf('%02d:%s', $hour, $minute);
             $timeObj = \Carbon\Carbon::parse("$date $time");
@@ -143,8 +173,10 @@ Route::get('/available-times', function(Request $request) {
             
             // Verificar se há tempo suficiente até o fim do horário de trabalho
             $endTime = $timeObj->copy()->addMinutes($duration);
-            if ($endTime->hour > 18 || ($endTime->hour == 18 && $endTime->minute > 0)) {
-                continue; // Pula se o serviço ultrapassar 18:00
+            $workEndTime = \Carbon\Carbon::parse("$date {$workingHours['end']}");
+            
+            if ($endTime->greaterThan($workEndTime)) {
+                continue; // Pula se o serviço ultrapassar o horário de trabalho
             }
             
             // Verificar se o horário está disponível (considerando a duração)

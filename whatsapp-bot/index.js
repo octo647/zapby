@@ -1,5 +1,5 @@
-import baileys from '@whiskeysockets/baileys'
-const { makeWASocket, useMultiFileAuthState, fetchLatestBaileysVersion } = baileys
+import fetch from 'node-fetch'
+import makeWASocket, { useMultiFileAuthState, fetchLatestBaileysVersion } from 'baileys'
 import qrcode from 'qrcode-terminal'
 import fs from 'fs'
 import path from 'path'
@@ -9,32 +9,415 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 // Caminhos de arquivos
-const REMINDERS_FILE = "/var/www/agendazap/storage/app/appointment_reminders.json"
-const CONTACTS_FILE = "/var/www/agendazap/storage/app/whatsapp_contacts.json"
+const COMMANDS_FILE = "/var/www/zapby/storage/app/whatsapp_commands.json"
+const CONTACTS_FILE = "/var/www/zapby/storage/app/whatsapp_contacts.json"
+const SESSIONS_FILE = "/var/www/zapby/storage/app/whatsapp_sessions.json"
+
+// Sistema de sessões para rastrear conversas
+const sessions = new Map();
+
+function loadSessions() {
+    try {
+        if (fs.existsSync(SESSIONS_FILE)) {
+            const data = JSON.parse(fs.readFileSync(SESSIONS_FILE, 'utf8'));
+            Object.entries(data).forEach(([phone, session]) => {
+                sessions.set(phone, session);
+            });
+            console.log(`📂 ${sessions.size} sessões carregadas`);
+        }
+    } catch (error) {
+        console.error('❌ Erro ao carregar sessões:', error);
+    }
+}
+
+function saveSessions() {
+    try {
+        const data = Object.fromEntries(sessions);
+        fs.writeFileSync(SESSIONS_FILE, JSON.stringify(data, null, 2));
+    } catch (error) {
+        console.error('❌ Erro ao salvar sessões:', error);
+    }
+}
+
+function getSession(phone) {
+    return sessions.get(phone) || null;
+}
+
+function setSession(phone, data) {
+    sessions.set(phone, { ...data, updated_at: new Date().toISOString() });
+    saveSessions();
+}
+
+function clearSession(phone) {
+    sessions.delete(phone);
+    saveSessions();
+}
+
+// Função para processar o fluxo de agendamento
+async function processBookingFlow(sock, remoteJid, phone, name, messageText, session) {
+    try {
+        console.log(`📋 processBookingFlow - step: ${session.step}, mensagem: ${messageText}`);
+        console.log(`📋 Sessão completa:`, JSON.stringify(session));
+        
+        const step = session.step;
+        
+        // Comando para cancelar agendamento
+        if (messageText.toLowerCase().trim() === 'cancelar') {
+            clearSession(phone);
+            await sock.sendMessage(remoteJid, { text: '❌ Agendamento cancelado. Digite a chave de acesso novamente quando quiser agendar.' });
+            return;
+        }
+        
+        // Validar integridade da sessão conforme o passo
+        if (step === 'service' && (!session.services || !Array.isArray(session.services))) {
+            console.error('❌ Sessão inválida no step service');
+            clearSession(phone);
+            await sock.sendMessage(remoteJid, { text: '❌ Sessão inválida. Por favor, envie a chave de acesso novamente para iniciar um novo agendamento.' });
+            return;
+        }
+        
+        if (step === 'date' && (!session.services || !session.service || !session.dates || !Array.isArray(session.dates))) {
+            console.error('❌ Sessão inválida no step date');
+            clearSession(phone);
+            await sock.sendMessage(remoteJid, { text: '❌ Sessão inválida. Por favor, envie a chave de acesso novamente para iniciar um novo agendamento.' });
+            return;
+        }
+        
+        if (step === 'time' && (!session.service || !session.date || !session.times || !Array.isArray(session.times))) {
+            console.error('❌ Sessão inválida no step time - faltam dados:', { 
+                service: !!session.service, 
+                date: !!session.date, 
+                times: session.times ? Array.isArray(session.times) : false 
+            });
+            clearSession(phone);
+            await sock.sendMessage(remoteJid, { text: '❌ Sessão inválida ou incompleta. Por favor, envie a chave de acesso novamente para iniciar um novo agendamento.' });
+            return;
+        }
+        
+        if (step === 'service') {
+            // Usuário escolheu o serviço (por número)
+            const choice = parseInt(messageText.trim());
+            
+            if (isNaN(choice) || choice < 1 || choice > session.services.length) {
+                await sock.sendMessage(remoteJid, { 
+                    text: `❌ Opção inválida. Digite o número de 1 a ${session.services.length}` 
+                });
+                return;
+            }
+            
+            const selectedService = session.services[choice - 1];
+            // Normalizar serviço para objeto
+            session.service = typeof selectedService === 'string' 
+                ? {name: selectedService, price: 50.00, duration: 30}
+                : selectedService;
+            session.step = 'date';
+            setSession(phone, session);
+            
+            // Gerar próximos 7 dias considerando dias de trabalho do profissional
+            const dates = [];
+            const today = new Date();
+            const workingDays = session.professional.working_days || [1, 2, 3, 4, 5]; // Seg-Sex por padrão
+            
+            // Garantir que working_days são inteiros
+            const workingDaysInt = Array.isArray(workingDays) ? workingDays.map(d => parseInt(d)) : workingDays;
+            
+            let daysChecked = 0;
+            while (dates.length < 7 && daysChecked < 14) {
+                const date = new Date(today);
+                date.setDate(today.getDate() + daysChecked);
+                const dayOfWeek = date.getDay();
+                
+                // Só adiciona se o profissional trabalha neste dia
+                if (workingDaysInt.includes(dayOfWeek)) {
+                    const dayName = date.toLocaleDateString('pt-BR', { weekday: 'long' });
+                    const dateStr = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+                    dates.push({ display: `${dayName}, ${dateStr}`, value: date.toISOString().split('T')[0] });
+                }
+                
+                daysChecked++;
+            }
+            session.dates = dates;
+            setSession(phone, session);
+            
+            let dateOptions = dates.map((d, i) => `[${i + 1}] ${d.display}`).join('\n');
+            
+            const serviceName = session.service.name || session.service;
+            const servicePrice = session.service.price ? `R$ ${parseFloat(session.service.price).toFixed(2)}` : '';
+            const serviceDuration = session.service.duration ? `${session.service.duration} min` : '';
+            const serviceInfo = [servicePrice, serviceDuration].filter(Boolean).join(' | ');
+            
+            await sock.sendMessage(remoteJid, { 
+                text: `✅ Serviço: *${serviceName}*${serviceInfo ? `\n${serviceInfo}` : ''}\n\n*Passo 2 de 3:*\nEscolha o dia:\n\n${dateOptions}\n\n_Digite *cancelar* para cancelar o agendamento_` 
+            });
+            
+        } else if (step === 'date') {
+            // Usuário escolheu o dia (por número)
+            const choice = parseInt(messageText.trim());
+            
+            if (isNaN(choice) || choice < 1 || choice > session.dates.length) {
+                await sock.sendMessage(remoteJid, { 
+                    text: `❌ Opção inválida. Digite o número de 1 a ${session.dates.length}` 
+                });
+                return;
+            }
+            
+            session.date = session.dates[choice - 1].value;
+            session.step = 'time';
+            setSession(phone, session);
+            
+            // Buscar horários disponíveis
+            await sock.sendMessage(remoteJid, { text: '⏳ Buscando horários disponíveis...' });
+            
+            try {
+                const serviceDuration = typeof session.service === 'object' && session.service.duration ? session.service.duration : 30;
+                const timesUrl = `https://zapby.com.br/api/available-times?professional_id=${session.professional.id}&date=${session.date}&duration=${serviceDuration}`;
+                console.log(`🔍 Buscando horários: ${timesUrl}`);
+                const timesResponse = await fetch(timesUrl);
+                
+                // Verificar se a resposta é JSON
+                const contentType = timesResponse.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const errorText = await timesResponse.text();
+                    console.error('❌ API não retornou JSON:', errorText.substring(0, 500));
+                    throw new Error('API retornou formato inválido');
+                }
+                
+                const timesData = await timesResponse.json();
+                console.log('✅ Horários recebidos:', timesData);
+                
+                if (!timesData.success || !timesData.times || timesData.times.length === 0) {
+                    await sock.sendMessage(remoteJid, { 
+                        text: '❌ Não há horários disponíveis neste dia. Por favor, escolha outro dia digitando o número novamente.' 
+                    });
+                    session.step = 'date';
+                    setSession(phone, session);
+                    return;
+                }
+                
+                session.times = timesData.times;
+                setSession(phone, session);
+                
+                // Mostrar horários em colunas
+                let timeOptions = '';
+                for (let i = 0; i < session.times.length; i += 3) {
+                    const row = [];
+                    for (let j = 0; j < 3 && i + j < session.times.length; j++) {
+                        const idx = i + j;
+                        row.push(`[${idx + 1}] ${session.times[idx]}`);
+                    }
+                    timeOptions += row.join('  ') + '\n';
+                }
+                
+                const dateDisplay = new Date(session.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+                await sock.sendMessage(remoteJid, { 
+                    text: `✅ Data: *${dateDisplay}*\n\n*Passo 3 de 3:*\nEscolha o horário:\n\n${timeOptions}\n_Digite *cancelar* para cancelar o agendamento_` 
+                });
+                
+            } catch (apiErr) {
+                console.error('❌ Erro ao buscar horários:', apiErr);
+                
+                // Voltar para escolha de data
+                session.step = 'date';
+                delete session.times;
+                setSession(phone, session);
+                
+                // Mostrar opções de data novamente
+                let dateOptions = session.dates.map((d, i) => `[${i + 1}] ${d.display}`).join('\n');
+                
+                await sock.sendMessage(remoteJid, { 
+                    text: `❌ Erro ao buscar horários disponíveis. Por favor, escolha outro dia:\n\n${dateOptions}\n\n_Digite *cancelar* para cancelar o agendamento_` 
+                });
+            }
+            
+        } else if (step === 'time') {
+            // Usuário escolheu o horário (por número)
+            const choice = parseInt(messageText.trim());
+            
+            if (isNaN(choice) || choice < 1 || choice > session.times.length) {
+                await sock.sendMessage(remoteJid, { 
+                    text: `❌ Opção inválida. Digite o número de 1 a ${session.times.length}` 
+                });
+                return;
+            }
+            
+            session.time = session.times[choice - 1];
+            setSession(phone, session);
+            
+            // Criar agendamento
+            await sock.sendMessage(remoteJid, { text: '⏳ Confirmando agendamento...' });
+            
+            try {
+                const createUrl = 'https://zapby.com.br/api/create-appointment';
+                const serviceName = typeof session.service === 'string' ? session.service : session.service.name;
+                const serviceDuration = typeof session.service === 'object' && session.service.duration ? session.service.duration : 30;
+                
+                const appointmentData = {
+                    professional_id: session.professional.id,
+                    client_name: session.client_name,
+                    client_phone: session.client_phone,
+                    service: serviceName,
+                    service_duration: serviceDuration,
+                    date: session.date,
+                    time: session.time
+                };
+                
+                const createResponse = await fetch(createUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(appointmentData)
+                });
+                
+                const createData = await createResponse.json();
+                
+                if (createData.success) {
+                    const dateDisplay = new Date(session.date + 'T12:00:00').toLocaleDateString('pt-BR', { 
+                        weekday: 'long', 
+                        day: '2-digit', 
+                        month: 'long', 
+                        year: 'numeric' 
+                    });
+                    
+                    const confirmMsg = `✅ *Agendamento confirmado!*\n\n👤 Cliente: ${session.client_name}\n💼 Serviço: ${session.service.name}\n📅 Data: ${dateDisplay}\n⏰ Horário: ${session.time}\n🏥 Profissional: ${session.professional.name}\n\n${session.professional.name} recebeu a notificação e entrará em contato se necessário.\n\nObrigado por usar o Zapby! 🎉`;
+                    
+                    await sock.sendMessage(remoteJid, { text: confirmMsg });
+                    
+                    // Notificar profissional
+                    await notifyProfessional(sock, session);
+                    
+                    // Limpar sessão
+                    clearSession(phone);
+                    console.log(`✅ Agendamento criado: ID ${createData.appointment.id}`);
+                } else {
+                    await sock.sendMessage(remoteJid, { 
+                        text: `❌ Erro ao criar agendamento: ${createData.message}\n\nPor favor, tente novamente ou entre em contato com ${session.professional.name}.` 
+                    });
+                }
+                
+            } catch (apiErr) {
+                console.error('❌ Erro ao criar agendamento:', apiErr);
+                await sock.sendMessage(remoteJid, { 
+                    text: '❌ Erro ao processar agendamento. Por favor, tente novamente mais tarde.' 
+                });
+            }
+        }
+    } catch (error) {
+        console.error('❌ Erro no fluxo de agendamento:', error);
+        await sock.sendMessage(remoteJid, { 
+            text: '❌ Erro no sistema. Por favor, tente novamente ou entre em contato com o profissional.' 
+        });
+    }
+}
+
+// Função para parsear data
+function parseDate(dateStr) {
+    const patterns = [
+        /^(\d{1,2})\/(\d{1,2})$/,  // DD/MM
+        /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/  // DD/MM/YYYY
+    ];
+    
+    for (const pattern of patterns) {
+        const match = dateStr.match(pattern);
+        if (match) {
+            const day = match[1].padStart(2, '0');
+            const month = match[2].padStart(2, '0');
+            const year = match[3] || new Date().getFullYear();
+            return `${year}-${month}-${day}`;
+        }
+    }
+    return null;
+}
+
+// Função para parsear horário
+function parseTime(timeStr) {
+    const pattern = /^(\d{1,2}):(\d{2})$/;
+    const match = timeStr.match(pattern);
+    if (match) {
+        const hour = match[1].padStart(2, '0');
+        const minute = match[2];
+        return `${hour}:${minute}`;
+    }
+    return null;
+}
+
+// Função para notificar profissional
+async function notifyProfessional(sock, session) {
+    try {
+        if (!session.professional.whatsapp) {
+            console.log(`⚠️ Profissional ${session.professional.name} não possui WhatsApp cadastrado`);
+            return;
+        }
+        
+        // Usar o JID do WhatsApp diretamente do banco
+        // Pode ser número normal (5532987007302) ou JID interno (248034512380020)
+        let professionalJid = session.professional.whatsapp;
+        
+        // Se não tiver @, adicionar o sufixo apropriado
+        if (!professionalJid.includes('@')) {
+            // Verificar se é número normal ou JID
+            if (professionalJid.length > 15) {
+                // JID interno - usar @lid
+                professionalJid = `${professionalJid}@lid`;
+            } else {
+                // Número normal - usar @s.whatsapp.net
+                professionalJid = `${professionalJid}@s.whatsapp.net`;
+            }
+        }
+        
+        // Formatar data para exibição
+        const dateDisplay = new Date(session.date + 'T12:00:00').toLocaleDateString('pt-BR', { 
+            weekday: 'long', 
+            day: '2-digit', 
+            month: 'long', 
+            year: 'numeric' 
+        });
+        
+        const notificationMessage = `🔔 *Novo Agendamento!*\n\n` +
+            `👤 Cliente: ${session.client_name}\n` +
+            `📱 Telefone: ${session.client_phone}\n` +
+            `💼 Serviço: ${session.service.name}\n` +
+            `📅 Data: ${dateDisplay}\n` +
+            `⏰ Horário: ${session.time}\n\n` +
+            `_Agendamento realizado via Zapby_`;
+        
+        await sock.sendMessage(professionalJid, { text: notificationMessage });
+        console.log(`✅ Notificação enviada para ${session.professional.name} (${professionalJid})`);
+    } catch (error) {
+        console.error('❌ Erro ao notificar profissional:', error.message);
+    }
+}
+
 
 // Salvar contato que enviou mensagem
-function saveContact(phone, name) {
+function saveContact(phone, name, remoteJid) {
     try {
         let contacts = []
         if (fs.existsSync(CONTACTS_FILE)) {
             contacts = JSON.parse(fs.readFileSync(CONTACTS_FILE, 'utf8'))
         }
         
-        // Verificar se contato já existe
-        const exists = contacts.find(c => c.phone === phone)
+        // Verificar se contato já existe (por phone ou remoteJid)
+        const exists = contacts.find(c => c.phone === phone || c.remoteJid === remoteJid)
         if (!exists) {
             contacts.push({
                 phone: phone,
                 name: name || 'Desconhecido',
+                remoteJid: remoteJid,
                 first_contact: new Date().toISOString(),
                 last_contact: new Date().toISOString()
             })
-            console.log(`💾 Novo contato salvo: ${phone} - ${name}`)
+            console.log(`💾 Novo contato salvo: ${phone} (${remoteJid}) - ${name}`)
         } else {
-            // Atualizar último contato
+            // Atualizar último contato e informações
             exists.last_contact = new Date().toISOString()
             if (name && name !== 'Desconhecido') {
                 exists.name = name
+            }
+            if (remoteJid && !exists.remoteJid) {
+                exists.remoteJid = remoteJid
+            }
+            // Atualizar phone se era um LID e agora temos o real
+            if (phone && phone.length >= 10 && phone.length <= 13 && /^\d+$/.test(phone) && (!exists.phone || exists.phone.length > 15)) {
+                exists.phone = phone
             }
         }
         
@@ -44,8 +427,91 @@ function saveContact(phone, name) {
     }
 }
 
+// Função para extrair número de telefone limpo
+function extractPhoneNumber(remoteJid) {
+    // Remover sufixos do WhatsApp
+    let cleaned = remoteJid
+        .replace('@s.whatsapp.net', '')
+        .replace('@lid', '')
+        .replace('@c.us', '');
+    
+    // Se tiver ":", pode ser lid:numero ou numero:timestamp
+    if (cleaned.includes(':')) {
+        const parts = cleaned.split(':');
+        
+        // 1. Tentar encontrar número brasileiro (começa com 55 ou tem 10-13 dígitos)
+        const brPhone = parts.find(p => 
+            /^\d+$/.test(p) && (
+                p.startsWith('55') && p.length >= 12 && p.length <= 13 ||
+                p.length >= 10 && p.length <= 11
+            )
+        );
+        
+        if (brPhone) {
+            cleaned = brPhone;
+        } else {
+            // 2. Se não, pegar qualquer número com 10+ dígitos
+            const validPhone = parts.find(p => p.length >= 10 && /^\d+$/.test(p));
+            if (validPhone) {
+                cleaned = validPhone;
+            } else {
+                // 3. Último recurso: pegar a parte maior
+                cleaned = parts.reduce((a, b) => a.length > b.length ? a : b);
+            }
+        }
+    }
+    
+    // Remover qualquer @ restante
+    cleaned = cleaned.split('@')[0];
+    
+    console.log(`📞 RemoteJid: ${remoteJid} -> Número extraído: ${cleaned}`);
+    return cleaned;
+}
+
+// Função para obter o número real de um contato (buscando no arquivo de contatos)
+async function getRealPhoneNumber(sock, remoteJid, name) {
+    try {
+        // Se não for LID, usar a extração normal
+        if (!remoteJid.includes('@lid')) {
+            return extractPhoneNumber(remoteJid);
+        }
+        
+        console.log(`🔍 Detectado LID, buscando número real para: ${name}`);
+        
+        // Buscar nos contatos salvos
+        try {
+            if (fs.existsSync(CONTACTS_FILE)) {
+                const contacts = JSON.parse(fs.readFileSync(CONTACTS_FILE, 'utf8'));
+                
+                // Buscar por remoteJid ou por nome
+                const contact = contacts.find(c => 
+                    c.remoteJid === remoteJid || 
+                    c.name === name
+                );
+                
+                if (contact && contact.phone && contact.phone !== extractPhoneNumber(remoteJid)) {
+                    console.log(`✅ Número real encontrado nos contatos: ${contact.phone}`);
+                    return contact.phone;
+                }
+            }
+        } catch (e) {
+            console.error(`⚠️ Erro ao buscar contatos:`, e.message);
+        }
+        
+        // Se não encontrar, usar extração normal
+        console.log(`⚠️ Número real não encontrado, usando extração padrão`);
+        return extractPhoneNumber(remoteJid);
+    } catch (error) {
+        console.error(`❌ Erro ao obter número real:`, error);
+        return extractPhoneNumber(remoteJid);
+    }
+}
+
 async function main() {
-    console.log('🚀 Iniciando AgendaZap WhatsApp Bot...')
+    console.log('🚀 Iniciando Zapby WhatsApp Bot...')
+    
+    // Carregar sessões salvas
+    loadSessions();
     
     const { state, saveCreds } = await useMultiFileAuthState('./auth_info_baileys')
     const { version } = await fetchLatestBaileysVersion()
@@ -80,57 +546,385 @@ async function main() {
                 // Ignorar mensagens próprias e de grupos
                 if (msg.key.fromMe || msg.key.remoteJid.includes('@g.us')) continue
                 
-                const phone = msg.key.remoteJid.replace('@s.whatsapp.net', '')
                 const name = msg.pushName || 'Desconhecido'
+                const phone = await getRealPhoneNumber(sock, msg.key.remoteJid, name)
                 const messageText = msg.message?.conversation || 
                                    msg.message?.extendedTextMessage?.text || 
                                    ''
                 
                 console.log(`📨 Mensagem recebida de ${name} (${phone}): ${messageText}`)
                 
-                // Salvar contato
-                saveContact(phone, name)
+                // Salvar contato com remoteJid
+                saveContact(phone, name, msg.key.remoteJid)
                 
-                // Responder com mensagem de boas-vindas
-                const welcomeMessage = `Olá *${name}*! 👋
+                // Verificar se há sessão ativa de agendamento
+                const session = getSession(phone);
+                
+                if (session && session.state === 'booking') {
+                    // Verificar se a sessão está válida e não muito antiga (mais de 1 hora)
+                    const sessionAge = Date.now() - new Date(session.updated_at).getTime();
+                    if (sessionAge > 3600000) { // 1 hora em ms
+                        console.log(`⚠️ Sessão expirada para ${phone}, limpando...`);
+                        clearSession(phone);
+                    } else {
+                        // Usuário está em processo de agendamento
+                        await processBookingFlow(sock, msg.key.remoteJid, phone, name, messageText, session);
+                        continue;
+                    }
+                }
+                
+                // Verificar se há sessão de seleção de profissional
+                if (session && session.state === 'selecting_professional') {
+                    // Permitir cancelar
+                    if (messageText.toLowerCase().trim() === 'cancelar') {
+                        clearSession(phone);
+                        await sock.sendMessage(msg.key.remoteJid, { text: '❌ Seleção cancelada. Digite *agendar* quando quiser fazer um novo agendamento.' });
+                        continue;
+                    }
+                    
+                    const choice = parseInt(messageText.trim());
+                    
+                    if (!isNaN(choice) && choice > 0 && choice <= session.professionals.length) {
+                        const selectedProfessional = session.professionals[choice - 1];
+                        console.log(`✅ Profissional selecionado: ${selectedProfessional.name}`);
+                        
+                        // Buscar serviços do profissional
+                        try {
+                            const servicesUrl = `https://zapby.com.br/api/professional-services?professional_id=${selectedProfessional.id}`;
+                            console.log(`🌐 Buscando serviços: ${servicesUrl}`);
+                            const servicesResponse = await fetch(servicesUrl);
+                            const servicesData = await servicesResponse.json();
+                            console.log(`📊 Serviços recebidos:`, JSON.stringify(servicesData));
+                            
+                            let services = [
+                                {name: 'Consulta', price: 50.00, duration: 30}, 
+                                {name: 'Atendimento', price: 50.00, duration: 30}
+                            ];
+                            
+                            if (servicesData.success && Array.isArray(servicesData.services) && servicesData.services.length > 0) {
+                                services = servicesData.services;
+                            }
+                            
+                            // Formatar opções de serviços
+                            let serviceOptions = services.map((s, i) => {
+                                const service = typeof s === 'string' ? {name: s, price: 50.00, duration: 30} : s;
+                                const price = service.price ? `R$ ${parseFloat(service.price).toFixed(2)}` : 'R$ 50,00';
+                                const duration = service.duration || 30;
+                                return `[${i + 1}] ${service.name}\n    💰 ${price} | ⏱️ ${duration} min`;
+                            }).join('\n\n');
+                            
+                            // Iniciar sessão de agendamento
+                            setSession(phone, {
+                                state: 'booking',
+                                step: 'service',
+                                professional: selectedProfessional,
+                                services: services,
+                                client_name: name,
+                                client_phone: phone
+                            });
+                            
+                            const bookingMessage = `Olá *${name}*! 👋\n\n` +
+                                                  `Agendando com:\n👤 *${selectedProfessional.name}*\n💼 ${selectedProfessional.profession}\n\n` +
+                                                  `📅 *Vamos agendar seu serviço!*\n\n` +
+                                                  `*Passo 1 de 3:*\nEscolha o serviço:\n\n${serviceOptions}\n\n` +
+                                                  `_Digite *cancelar* para cancelar o agendamento_`;
+                            
+                            await sock.sendMessage(msg.key.remoteJid, { text: bookingMessage });
+                            console.log(`✅ Fluxo de agendamento iniciado para ${phone}`);
+                            continue;
+                        } catch (servicesErr) {
+                            console.error('❌ Erro ao buscar serviços:', servicesErr);
+                            clearSession(phone);
+                            await sock.sendMessage(msg.key.remoteJid, { 
+                                text: '❌ Erro ao buscar serviços. Por favor, tente novamente.' 
+                            });
+                            continue;
+                        }
+                    } else {
+                        await sock.sendMessage(msg.key.remoteJid, { 
+                            text: '❌ Opção inválida. Digite o número do profissional ou digite *cancelar*.' 
+                        });
+                        continue;
+                    }
+                }
+                
+                // Verificar se a mensagem é uma access_key (código geralmente de 8 caracteres)
+                const accessKeyPattern = /^[A-Z0-9]{6,10}$/i;
+                if (messageText.trim().match(accessKeyPattern)) {
+                    console.log(`🔑 Possível access_key detectada: ${messageText.trim()}`)
+                    
+                    try {
+                        const keyCheckUrl = `https://zapby.com.br/api/validate-access-key?key=${messageText.trim()}`;
+                        console.log(`🌐 Consultando API: ${keyCheckUrl}`);
+                        const keyResponse = await fetch(keyCheckUrl);
+                        const keyData = await keyResponse.json();
+                        console.log(`📊 Resposta da API:`, JSON.stringify(keyData));
+                        
+                        if (keyData.valid) {
+                            const professional = keyData.professional;
+                            
+                            // Buscar serviços do profissional
+                            let services = [
+                                {name: 'Consulta', price: 50.00, duration: 30}, 
+                                {name: 'Atendimento', price: 50.00, duration: 30}, 
+                                {name: 'Sessão', price: 50.00, duration: 60}
+                            ]; // Fallback padrão
+                            
+                            try {
+                                const servicesUrl = `https://zapby.com.br/api/professional-services?professional_id=${professional.id}`;
+                                console.log(`🌐 Buscando serviços: ${servicesUrl}`);
+                                const servicesResponse = await fetch(servicesUrl);
+                                const servicesData = await servicesResponse.json();
+                                console.log(`📊 Serviços recebidos:`, JSON.stringify(servicesData));
+                                
+                                if (servicesData.success && Array.isArray(servicesData.services) && servicesData.services.length > 0) {
+                                    services = servicesData.services;
+                                }
+                            } catch (servicesErr) {
+                                console.error('❌ Erro ao buscar serviços (usando padrão):', servicesErr);
+                            }
+                            
+                            // Formatar opções de serviços com preço e duração
+                            let serviceOptions = services.map((s, i) => {
+                                const service = typeof s === 'string' ? {name: s, price: 50.00, duration: 30} : s;
+                                const price = service.price ? `R$ ${parseFloat(service.price).toFixed(2)}` : 'R$ 50,00';
+                                const duration = service.duration || 30;
+                                return `[${i + 1}] ${service.name}\n    💰 ${price} | ⏱️ ${duration} min`;
+                            }).join('\n\n');
+                            
+                            // Iniciar sessão de agendamento
+                            setSession(phone, {
+                                state: 'booking',
+                                step: 'service',
+                                professional: professional,
+                                services: services,
+                                client_name: name,
+                                client_phone: phone
+                            });
+                            
+                            console.log(`✅ Sessão criada:`, JSON.stringify(getSession(phone)));
+                            
+                            const bookingMessage = `Olá *${name}*! 👋\n\n✅ Chave válida!\n\nVocê está acessando a agenda de:\n👤 *${professional.name}*\n💼 ${professional.profession}\n\n📅 *Vamos agendar seu serviço!*\n\n*Passo 1 de 3:*\nEscolha o serviço:\n\n${serviceOptions}\n\n_Digite *cancelar* para cancelar o agendamento_`;
+                            
+                            await sock.sendMessage(msg.key.remoteJid, { text: bookingMessage });
+                            console.log(`✅ Sessão de agendamento iniciada para ${phone}`);
+                            continue;
+                        } else {
+                            console.log(`❌ Chave inválida: ${messageText.trim()}`);
+                        }
+                    } catch (keyErr) {
+                        console.error('❌ Erro ao validar access_key:', keyErr);
+                    }
+                }
+                
+                // Verificar se o usuário quer consultar seus agendamentos
+                const checkAppointmentsPattern = /\b(agenda|agendamento|horário|consultar|ver|meus|compromisso)\b/i;
+                if (messageText.toLowerCase().match(checkAppointmentsPattern)) {
+                    console.log(`📅 Cliente quer ver agendamentos: ${phone}`);
+                    console.log(`🔍 [DEBUG] RemoteJid original: ${msg.key.remoteJid}`);
+                    console.log(`🔍 [DEBUG] Phone extraído: ${phone}`);
+                    console.log(`🔍 [DEBUG] Name: ${name}`);
+                    
+                    try {
+                        const appointmentsUrl = `https://zapby.com.br/api/client-appointments?whatsapp=${phone}`;
+                        console.log(`🌐 Consultando agendamentos: ${appointmentsUrl}`);
+                        const appointmentsResponse = await fetch(appointmentsUrl);
+                        const appointmentsData = await appointmentsResponse.json();
+                        console.log(`📊 Resposta de agendamentos:`, JSON.stringify(appointmentsData));
+                        console.log(`🔍 [DEBUG] Count retornado: ${appointmentsData.count}`);
+                        
+                        if (appointmentsData.success) {
+                            if (appointmentsData.count === 0) {
+                                const noAppointmentsMsg = `📅 *Seus Agendamentos*\n\n❌ Você não tem agendamentos futuros.\n\n💡 Para agendar um serviço, envie a chave de acesso que você recebeu do profissional!`;
+                                await sock.sendMessage(msg.key.remoteJid, { text: noAppointmentsMsg });
+                            } else {
+                                let appointmentsList = appointmentsData.appointments.map((apt, index) => {
+                                    return `✅ *Agendamento ${index + 1}*\n` +
+                                           `👤 Profissional: ${apt.professional_name}\n` +
+                                           `💼 Serviço: ${apt.service}\n` +
+                                           `📅 Data: ${apt.date} (${apt.day_of_week})\n` +
+                                           `⏰ Horário: ${apt.time}\n` +
+                                           `⏱️ Duração: ${apt.duration} min`;
+                                }).join('\n\n➖➖➖➖➖\n\n');
+                                
+                                const appointmentsMsg = `📅 *Seus Agendamentos*\n\n` +
+                                                       `Você tem *${appointmentsData.count}* agendamento(s):\n\n` +
+                                                       `${appointmentsList}\n\n` +
+                                                       `💡 Você receberá lembretes automáticos!`;
+                                
+                                await sock.sendMessage(msg.key.remoteJid, { text: appointmentsMsg });
+                            }
+                            console.log(`✅ Agendamentos enviados para ${phone}`);
+                            continue;
+                        }
+                    } catch (appointmentsErr) {
+                        console.error('❌ Erro ao buscar agendamentos:', appointmentsErr);
+                        await sock.sendMessage(msg.key.remoteJid, { 
+                            text: '❌ Desculpe, não consegui consultar seus agendamentos no momento. Tente novamente mais tarde.' 
+                        });
+                        continue;
+                    }
+                }
+                
+                // Verificar se o usuário quer agendar novamente com um profissional conhecido
+                const scheduleAgainPattern = /\b(agendar|novo agendamento|marcar horário)\b/i;
+                if (messageText.toLowerCase().match(scheduleAgainPattern)) {
+                    console.log(`📅 Cliente quer agendar: ${phone}`);
+                    
+                    try {
+                        const professionalsUrl = `https://zapby.com.br/api/client-professionals?whatsapp=${phone}`;
+                        console.log(`🌐 Consultando profissionais conhecidos: ${professionalsUrl}`);
+                        const professionalsResponse = await fetch(professionalsUrl);
+                        const professionalsData = await professionalsResponse.json();
+                        console.log(`📊 Resposta de profissionais:`, JSON.stringify(professionalsData));
+                        
+                        if (professionalsData.success && professionalsData.count > 0) {
+                            // Salvar profissionais na sessão temporária
+                            setSession(phone, {
+                                state: 'selecting_professional',
+                                professionals: professionalsData.professionals,
+                                client_name: name,
+                                client_phone: phone
+                            });
+                            
+                            let professionalsList = professionalsData.professionals.map((prof, index) => {
+                                return `[${index + 1}] ${prof.name}\n    💼 ${prof.profession}`;
+                            }).join('\n\n');
+                            
+                            const selectProfessionalMsg = `📋 *Seus Profissionais*\n\n` +
+                                                         `Selecione o profissional para agendar:\n\n` +
+                                                         `${professionalsList}\n\n` +
+                                                         `_Digite o número do profissional ou envie uma chave de acesso_`;
+                            
+                            await sock.sendMessage(msg.key.remoteJid, { text: selectProfessionalMsg });
+                            console.log(`✅ Menu de profissionais enviado para ${phone}`);
+                            continue;
+                        } else {
+                            const noProfessionalsMsg = `📅 *Agendar Serviço*\n\n` +
+                                                      `Você ainda não tem histórico de agendamentos.\n\n` +
+                                                      `Para agendar, envie a *chave de acesso* que você recebeu do profissional!`;
+                            await sock.sendMessage(msg.key.remoteJid, { text: noProfessionalsMsg });
+                            continue;
+                        }
+                    } catch (professionalsErr) {
+                        console.error('❌ Erro ao buscar profissionais:', professionalsErr);
+                        await sock.sendMessage(msg.key.remoteJid, { 
+                            text: '❌ Erro ao buscar seus profissionais. Por favor, envie a chave de acesso do profissional.' 
+                        });
+                        continue;
+                    }
+                }
+                
+                // Consultar API para identificar tipo de usuário
+                let userType = 'cliente';
+                try {
+                    const apiUrl = `https://zapby.com.br/api/check-user-type?phone=${phone}`;
+                    const response = await fetch(apiUrl);
+                    const data = await response.json();
+                    userType = data.type || 'cliente';
+                } catch (apiErr) {
+                    console.error('❌ Erro ao consultar API de tipo de usuário:', apiErr);
+                }
 
-Bem-vindo ao *AgendaZap*! 📅
+                let welcomeMessage = '';
+                if (userType === 'profissional') {
+                    welcomeMessage = `Olá *${name}*! 👋\n\nBem-vindo ao *Zapby* para Profissionais! 💼\n\nAqui você pode gerenciar seus agendamentos, receber notificações automáticas e acessar o painel exclusivo para profissionais.\n\nAcesse seu dashboard: https://zapby.com.br/professional/dashboard\n\n📊 Gerenciar agendamentos\n⚙️ Configurar horários\n📱 Receber notificações\n\nSistema ativo e funcionando!`;
+                } else {
+                    // Verificar se o cliente já tem profissionais conhecidos
+                    let hasProfessionals = false;
+                    try {
+                        const professionalsUrl = `https://zapby.com.br/api/client-professionals?whatsapp=${phone}`;
+                        const professionalsResponse = await fetch(professionalsUrl);
+                        const professionalsData = await professionalsResponse.json();
+                        hasProfessionals = professionalsData.success && professionalsData.count > 0;
+                    } catch (err) {
+                        console.error('❌ Erro ao verificar profissionais:', err);
+                    }
+                    
+                    if (hasProfessionals) {
+                        welcomeMessage = `Olá *${name}*! 👋\n\nBem-vindo de volta ao *Zapby*! 📅\n\n` +
+                                       `✨ *Opções rápidas:*\n\n` +
+                                       `📅 Digite *"agendar"* - Novo agendamento\n` +
+                                       `📋 Digite *"agenda"* - Ver seus agendamentos\n\n` +
+                                       `💡 Você também pode enviar uma nova chave de acesso!\n\n` +
+                                       `Sistema ativo e funcionando!`;
+                    } else {
+                        welcomeMessage = `Olá *${name}*! 👋\n\nBem-vindo ao *Zapby*! 📅\n\nSeu contato foi registrado e você receberá lembretes automáticos sobre seus agendamentos.\n\n✨ *Como funciona:*\n\n1️⃣ Receba a *chave de acesso* do profissional\n2️⃣ Envie a chave aqui no chat\n3️⃣ Escolha o serviço, data e horário\n4️⃣ Confirme seu agendamento!\n\n📅 *Consultar seus agendamentos:*\nDigite *"agenda"* a qualquer momento\n\n💡 Você receberá lembretes automáticos!\n\nSistema ativo e funcionando!`;
+                    }
+                }
 
-Seu contato foi registrado e você receberá lembretes automáticos sobre seus agendamentos.
-
-Sistema ativo e funcionando! ✅`
-
-                await sock.sendMessage(msg.key.remoteJid, { text: welcomeMessage })
-                console.log(`✅ Resposta enviada para ${phone}`)
+                try {
+                    console.log(`[DEBUG] Enviando mensagem para ${msg.key.remoteJid}:`, welcomeMessage)
+                    const sendResult = await sock.sendMessage(msg.key.remoteJid, { text: welcomeMessage })
+                    console.log(`[DEBUG] Resultado do envio:`, sendResult)
+                    console.log(`✅ Resposta enviada para ${phone}`)
+                } catch (sendErr) {
+                    console.error('❌ Erro ao enviar mensagem de resposta:', sendErr)
+                }
             }
         } catch (error) {
             console.error('❌ Erro ao processar mensagem:', error)
         }
     })
 
-    // Verificar lembretes periodicamente
+    // Verificar comandos periodicamente
     setInterval(async () => {
-        if (!fs.existsSync(REMINDERS_FILE)) return
+        console.log('🔍 [DEBUG] Verificando comandos...', new Date().toLocaleTimeString())
+        if (!fs.existsSync(COMMANDS_FILE)) {
+            console.log('⚠️ [DEBUG] Arquivo não existe:', COMMANDS_FILE)
+            return
+        }
         
         try {
-            const content = fs.readFileSync(REMINDERS_FILE, 'utf8')
+            const content = fs.readFileSync(COMMANDS_FILE, 'utf8')
+            console.log('📄 [DEBUG] Conteúdo do arquivo:', content.substring(0, 100))
             if (!content.trim()) return
             
-            const reminders = JSON.parse(content)
+            const commands = JSON.parse(content)
+            console.log('📋 [DEBUG] Comandos parseados:', commands.length)
+            if (!Array.isArray(commands) || commands.length === 0) return
             
-            for (const reminder of reminders) {
-                const phoneNumber = reminder.phone.replace(/\D/g, '')
-                const jid = phoneNumber + '@s.whatsapp.net'
-                
-                console.log(`📤 Enviando lembrete para ${phoneNumber}`)
-                await sock.sendMessage(jid, { text: reminder.message })
-                console.log(`✅ Lembrete enviado para ${phoneNumber}`)
+            console.log(`📋 Processando ${commands.length} comandos...`)
+            
+            for (const cmd of commands) {
+                if (cmd.type === 'send_message') {
+                    const phoneNumber = cmd.to.replace(/\D/g, '')
+                    
+                    // Buscar remoteJid correto nos contatos (pode ser LID)
+                    let jid = phoneNumber + '@s.whatsapp.net'
+                    
+                    try {
+                        if (fs.existsSync(CONTACTS_FILE)) {
+                            const contacts = JSON.parse(fs.readFileSync(CONTACTS_FILE, 'utf8'))
+                            
+                            // Buscar contato por número (com ou sem 55)
+                            const contact = contacts.find(c => {
+                                const contactPhone = c.phone.replace(/\D/g, '')
+                                const cmdPhone = phoneNumber.replace(/\D/g, '')
+                                return contactPhone === cmdPhone || 
+                                       contactPhone === '55' + cmdPhone ||
+                                       '55' + contactPhone === cmdPhone
+                            })
+                            
+                            if (contact && contact.remoteJid) {
+                                jid = contact.remoteJid
+                                console.log(`✅ Encontrado remoteJid mapeado: ${jid}`)
+                            }
+                        }
+                    } catch (e) {
+                        console.error('⚠️ Erro ao buscar remoteJid:', e.message)
+                    }
+                    
+                    console.log(`📤 Enviando mensagem para ${phoneNumber} (${jid})`)
+                    await sock.sendMessage(jid, { text: cmd.message })
+                    console.log(`✅ Mensagem enviada para ${phoneNumber}`)
+                }
             }
             
             // Limpar arquivo após enviar
-            fs.writeFileSync(REMINDERS_FILE, '', 'utf8')
+            fs.writeFileSync(COMMANDS_FILE, '[]', 'utf8')
         } catch (error) {
-            console.error('❌ Erro ao processar lembretes:', error)
+            console.error('❌ Erro ao processar comandos:', error)
         }
     }, 30000) // Verificar a cada 30 segundos
 }

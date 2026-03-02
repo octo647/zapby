@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="AgendaPro - Sistema de agendamento para profissionais autônomos">
-    <title>@yield('title', 'AgendaPro')</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="description" content="Zapby - Sistema de agendamento para profissionais autônomos">
+    <title>@yield('title', 'Zapby')</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -22,7 +23,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div class="flex justify-between items-center">
                 <a href="{{ route('home') }}" class="text-2xl font-bold text-indigo-600">
-                    AgendaPro
+                    Zapby
                 </a>
 
             </div>
@@ -54,7 +55,7 @@
     <!-- Footer -->
     <footer class="bg-white border-t mt-12">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center text-gray-600 text-sm">
-            <p>&copy; {{ date('Y') }} AgendaPro. Todos os direitos reservados.</p>
+            <p>&copy; {{ date('Y') }} Zapby. Todos os direitos reservados.</p>
         </div>
     </footer>
 

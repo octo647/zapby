@@ -42,13 +42,14 @@ return [
 
     'wppconnect' => [
         'url' => env('WPPCONNECT_URL', 'http://69.6.222.77:21465'),
-        'secret' => env('WPPCONNECT_SECRET', 'AgendaZap2026Secret'),
-        'session' => env('WPPCONNECT_SESSION', 'agendazap'),
+        'secret' => env('WPPCONNECT_SECRET', 'Zapby2026Secret'),
+        'session' => env('WPPCONNECT_SESSION', 'zapby'),
     ],
 
     'asaas' => [
         'api_url' => env('ASAAS_API_URL', 'https://sandbox.asaas.com/api/v3'),
         'api_key' => env('ASAAS_API_KEY'),
+        'webhook_token' => env('WEBHOOK_TOKEN'),
     ],
 
 ];

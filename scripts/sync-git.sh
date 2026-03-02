@@ -48,7 +48,7 @@ fi
 echo -e "${YELLOW}[5/5] Execute no VPS:${NC}"
 echo -e "${GREEN}"
 echo "ssh seu_usuario@seu_vps.com.br"
-echo "cd /var/www/agendazap"
+echo "cd /var/www/zapby"
 echo "git pull origin master"
 echo "composer install --no-dev --optimize-autoloader"
 echo "php artisan migrate --force"

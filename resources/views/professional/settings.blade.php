@@ -12,7 +12,7 @@
         <div class="px-6 py-4 border-b border-gray-200">
             <h3 class="text-xl font-bold text-gray-900">Dados do Perfil</h3>
         </div>
-        <form method="POST" action="{{ route('professional.settings') }}" class="p-6">
+        <form method="POST" action="{{ route('professional.settings.update') }}" class="p-6">
             @csrf
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -52,44 +52,22 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div>
-                    <label for="whatsapp" class="block text-sm font-medium text-gray-700 mb-2">
-                        WhatsApp (opcional)
-                    </label>
-                    <input 
-                        type="text" 
-                        id="whatsapp" 
-                        name="whatsapp" 
-                        value="{{ old('whatsapp', $professional->whatsapp) }}"
-                        placeholder="(32) 98294-948"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    >
-                    <p class="mt-1 text-xs text-gray-500">Para receber notificações de novos agendamentos</p>
-                    @error('whatsapp')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div>
-                    <label for="default_duration" class="block text-sm font-medium text-gray-700 mb-2">
-                        Duração Padrão (minutos) *
-                    </label>
-                    <input 
-                        type="number" 
-                        id="default_duration" 
-                        name="default_duration" 
-                        value="{{ old('default_duration', $professional->default_duration) }}"
-                        required
-                        min="15"
-                        max="240"
-                        step="15"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    >
-                    @error('default_duration')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
+            <div class="mb-6">
+                <label for="whatsapp" class="block text-sm font-medium text-gray-700 mb-2">
+                    WhatsApp (opcional)
+                </label>
+                <input 
+                    type="text" 
+                    id="whatsapp" 
+                    name="whatsapp" 
+                    value="{{ old('whatsapp', $professional->whatsapp) }}"
+                    placeholder="(32) 98294-948"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                >
+                <p class="mt-1 text-xs text-gray-500">Para receber notificações de novos agendamentos</p>
+                @error('whatsapp')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
             </div>
 
             <div class="mb-6">
@@ -108,6 +86,8 @@
                             6 => 'Sábado'
                         ];
                         $workingDays = old('working_days', $professional->working_days ?? []);
+                        // Garantir que é sempre um array
+                        $workingDays = is_array($workingDays) ? $workingDays : [];
                     @endphp
                     @foreach($days as $value => $label)
                         <label class="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 {{ in_array($value, $workingDays) ? 'bg-indigo-50 border-indigo-500' : '' }}">
@@ -130,6 +110,10 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 @php
                     $workingHours = old('working_hours', $professional->working_hours ?? ['start' => '08:00', 'end' => '18:00']);
+                    // Garantir que é sempre um array
+                    if (!is_array($workingHours)) {
+                        $workingHours = ['start' => '08:00', 'end' => '18:00'];
+                    }
                 @endphp
                 <div>
                     <label for="working_hours_start" class="block text-sm font-medium text-gray-700 mb-2">
@@ -139,7 +123,7 @@
                         type="time" 
                         id="working_hours_start" 
                         name="working_hours_start" 
-                        value="{{ $workingHours['start'] }}"
+                        value="{{ $workingHours['start'] ?? '08:00' }}"
                         required
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                     >
@@ -156,7 +140,7 @@
                         type="time" 
                         id="working_hours_end" 
                         name="working_hours_end" 
-                        value="{{ $workingHours['end'] }}"
+                        value="{{ $workingHours['end'] ?? '18:00' }}"
                         required
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                     >
@@ -172,6 +156,115 @@
                     class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-indigo-700 transition"
                 >
                     💾 Salvar Configurações
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Gerenciar Serviços -->
+    <div class="bg-white rounded-lg shadow-md mb-6">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-xl font-bold text-gray-900">Meus Serviços</h3>
+            <p class="text-sm text-gray-600 mt-1">Personalize os serviços, preços e durações</p>
+        </div>
+        <form method="POST" action="{{ route('professional.settings') }}" class="p-6">
+            @csrf
+
+            <div id="services-container" class="space-y-4 mb-4">
+                @php
+                    $services = old('services', $professional->services ?? []);
+                    // Garantir que é sempre um array
+                    if (!is_array($services)) {
+                        $services = [];
+                    }
+                    // Garantir que não está vazio - adicionar serviço padrão
+                    if (empty($services)) {
+                        $services = [['name' => 'Serviço 1', 'price' => '50.00', 'duration' => 30]];
+                    }
+                    // Converter serviços antigos (strings) para novo formato (objetos)
+                    $services = array_map(function($service) {
+                        if (is_string($service)) {
+                            return ['name' => $service, 'price' => '50.00', 'duration' => 30];
+                        }
+                        return $service;
+                    }, $services);
+                @endphp
+                @foreach($services as $index => $service)
+                    <div class="service-item bg-gray-50 p-4 rounded-lg border border-gray-200">
+                        <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+                            <div class="md:col-span-5">
+                                <label class="block text-xs font-medium text-gray-700 mb-1">Nome do Serviço</label>
+                                <input 
+                                    type="text" 
+                                    name="services[{{ $index }}][name]" 
+                                    value="{{ is_array($service) ? $service['name'] : $service }}"
+                                    placeholder="Ex: Corte Masculino"
+                                    required
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                >
+                            </div>
+                            <div class="md:col-span-3">
+                                <label class="block text-xs font-medium text-gray-700 mb-1">Preço (R$)</label>
+                                <input 
+                                    type="number" 
+                                    name="services[{{ $index }}][price]" 
+                                    value="{{ is_array($service) ? ($service['price'] ?? '50.00') : '50.00' }}"
+                                    placeholder="50.00"
+                                    step="0.01"
+                                    min="0"
+                                    required
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                >
+                            </div>
+                            <div class="md:col-span-3">
+                                <label class="block text-xs font-medium text-gray-700 mb-1">Duração (min)</label>
+                                <input 
+                                    type="number" 
+                                    name="services[{{ $index }}][duration]" 
+                                    value="{{ is_array($service) ? ($service['duration'] ?? 30) : 30 }}"
+                                    placeholder="30"
+                                    step="15"
+                                    min="15"
+                                    max="480"
+                                    required
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                >
+                            </div>
+                            <div class="md:col-span-1 flex items-end">
+                                <button 
+                                    type="button" 
+                                    onclick="removeService(this)"
+                                    class="w-full px-3 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition"
+                                    title="Remover serviço"
+                                >
+                                    🗑️
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+
+            <div class="flex gap-3 mb-6">
+                <button 
+                    type="button"
+                    onclick="addService()"
+                    class="bg-green-100 text-green-700 px-4 py-2 rounded-lg font-semibold hover:bg-green-200 transition"
+                >
+                    ➕ Adicionar Serviço
+                </button>
+            </div>
+
+            @error('services')
+                <p class="mt-1 mb-4 text-sm text-red-600">{{ $message }}</p>
+            @enderror
+
+            <div class="flex justify-end">
+                <button 
+                    type="submit"
+                    class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-indigo-700 transition"
+                >
+                    💾 Salvar Serviços
                 </button>
             </div>
         </form>
@@ -247,4 +340,82 @@
     </div>
 
 </div>
+
+<script>
+let serviceIndex = {{ count($services) }};
+
+function addService() {
+    const container = document.getElementById('services-container');
+    const div = document.createElement('div');
+    div.className = 'service-item bg-gray-50 p-4 rounded-lg border border-gray-200';
+    div.innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+            <div class="md:col-span-5">
+                <label class="block text-xs font-medium text-gray-700 mb-1">Nome do Serviço</label>
+                <input 
+                    type="text" 
+                    name="services[${serviceIndex}][name]" 
+                    value=""
+                    placeholder="Ex: Corte Masculino"
+                    required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                >
+            </div>
+            <div class="md:col-span-3">
+                <label class="block text-xs font-medium text-gray-700 mb-1">Preço (R$)</label>
+                <input 
+                    type="number" 
+                    name="services[${serviceIndex}][price]" 
+                    value="50.00"
+                    placeholder="50.00"
+                    step="0.01"
+                    min="0"
+                    required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                >
+            </div>
+            <div class="md:col-span-3">
+                <label class="block text-xs font-medium text-gray-700 mb-1">Duração (min)</label>
+                <input 
+                    type="number" 
+                    name="services[${serviceIndex}][duration]" 
+                    value="30"
+                    placeholder="30"
+                    step="15"
+                    min="15"
+                    max="480"
+                    required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                >
+            </div>
+            <div class="md:col-span-1 flex items-end">
+                <button 
+                    type="button" 
+                    onclick="removeService(this)"
+                    class="w-full px-3 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition"
+                    title="Remover serviço"
+                >
+                    🗑️
+                </button>
+            </div>
+        </div>
+    `;
+    container.appendChild(div);
+    serviceIndex++;
+}
+
+function removeService(button) {
+    const container = document.getElementById('services-container');
+    const items = container.querySelectorAll('.service-item');
+    
+    // Não permitir remover se só tiver um serviço
+    if (items.length <= 1) {
+        alert('Você precisa ter pelo menos um serviço cadastrado!');
+        return;
+    }
+    
+    button.closest('.service-item').remove();
+}
+</script>
+
 @endsection

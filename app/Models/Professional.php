@@ -15,22 +15,26 @@ class Professional extends Authenticatable
     protected $fillable = [
         'name',
         'slug',
+        'cpf',
         'whatsapp',
         'whatsapp_verified',
         'verification_code',
         'verification_code_expires_at',
         'profession',
+        'services',
         'default_duration',
         'working_days',
         'working_hours',
         'subscription_status',
         'trial_ends_at',
         'password',
+        'access_key',
     ];
 
     protected $casts = [
         'working_days' => 'array',
         'working_hours' => 'array',
+        'services' => 'array',
         'trial_ends_at' => 'datetime',
         'whatsapp_verified' => 'boolean',
         'verification_code_expires_at' => 'datetime',

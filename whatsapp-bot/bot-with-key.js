@@ -5,12 +5,12 @@ import fs from 'fs'
 import mysql from 'mysql2/promise'
 
 // Configurações
-const REMINDERS_FILE = "/var/www/agendazap/storage/app/appointment_reminders.json"
+const REMINDERS_FILE = "/var/www/zapby/storage/app/appointment_reminders.json"
 const DB_CONFIG = {
     host: 'localhost',
     user: 'helder',
     password: 'jamapara',
-    database: 'agendazap'
+    database: 'zapby'
 }
 
 // Estados de conversa dos usuários
@@ -63,7 +63,7 @@ async function getAvailableSlots(professionalId, date) {
     }
     
     const prof = profRows[0]
-    const workingDays = JSON.parse(prof.working_days)
+    const workingDays = JSON.parse(prof.working_days).map(day => parseInt(day))
     const workingHours = JSON.parse(prof.working_hours)
     const duration = prof.default_duration
     
@@ -139,7 +139,7 @@ async function processMessage(sock, from, name, text) {
             
             if (accessKey.length < 4 || accessKey.length > 20) {
                 await sock.sendMessage(from, {
-                    text: `Olá *${name}*! 👋\n\nBem-vindo ao *AgendaZap*! 📅\n\nPara agendar, você precisa da *chave de acesso* do profissional.\n\nDigite a chave que você recebeu (ex: ABC12345)`
+                    text: `Olá *${name}*! 👋\n\nBem-vindo ao *Zapby*! 📅\n\nPara agendar, você precisa da *chave de acesso* do profissional.\n\nDigite a chave que você recebeu (ex: ABC12345)`
                 })
                 return
             }
@@ -281,7 +281,7 @@ async function processMessage(sock, from, name, text) {
             
             // Confirmar para cliente
             await sock.sendMessage(from, {
-                text: `✅ *Agendamento confirmado!*\n\n📋 *Detalhes do agendamento:*\n\n👤 Nome: ${state.clientName}\n💼 Profissional: ${state.professional.name}\n🔧 Serviço: ${state.professional.profession}\n📅 Data: ${dateFormatted}\n🕐 Horário: ${state.selectedTime}\n⏱️ Duração: ${state.professional.default_duration} minutos\n\nVocê receberá um lembrete 24h antes do seu agendamento.\n\nPara *cancelar* ou *remarcar*, entre em contato com o profissional.\n\nObrigado por usar o AgendaZap! 😊`
+                text: `✅ *Agendamento confirmado!*\n\n📋 *Detalhes do agendamento:*\n\n👤 Nome: ${state.clientName}\n💼 Profissional: ${state.professional.name}\n🔧 Serviço: ${state.professional.profession}\n📅 Data: ${dateFormatted}\n🕐 Horário: ${state.selectedTime}\n⏱️ Duração: ${state.professional.default_duration} minutos\n\nVocê receberá um lembrete 24h antes do seu agendamento.\n\nPara *cancelar* ou *remarcar*, entre em contato com o profissional.\n\nObrigado por usar o Zapby! 😊`
             })
             
             // Notificar profissional
@@ -292,7 +292,7 @@ async function processMessage(sock, from, name, text) {
                 
                 try {
                     await sock.sendMessage(profJid, {
-                        text: `🎉 *Novo agendamento via AgendaZap!*\n\n👤 Cliente: *${state.clientName}*\n📱 WhatsApp: ${phone}\n📅 Data: ${dateFormatted}\n🕐 Horário: ${state.selectedTime}\n⏱️ Duração: ${state.professional.default_duration} minutos\n\nAcesse o painel para mais detalhes:\nhttps://agendazap.pagby.com.br/dashboard`
+                        text: `🎉 *Novo agendamento via Zapby!*\n\n👤 Cliente: *${state.clientName}*\n📱 WhatsApp: ${phone}\n📅 Data: ${dateFormatted}\n🕐 Horário: ${state.selectedTime}\n⏱️ Duração: ${state.professional.default_duration} minutos\n\nAcesse o painel para mais detalhes:\nhttps://zapby.com.br/dashboard`
                     })
                 } catch (error) {
                     console.error('❌ Erro ao notificar profissional:', error)
@@ -306,7 +306,7 @@ async function processMessage(sock, from, name, text) {
 }
 
 async function main() {
-    console.log('🚀 Iniciando AgendaZap WhatsApp Bot...')
+    console.log('🚀 Iniciando Zapby WhatsApp Bot...')
     
     const { state, saveCreds } = await useMultiFileAuthState('./auth_info_baileys')
     const { version } = await fetchLatestBaileysVersion()

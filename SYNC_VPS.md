@@ -1,4 +1,4 @@
-# 🚀 Sincronização com VPS - AgendaZap
+# 🚀 Sincronização com VPS - Zapby
 
 ## Configuração Inicial
 
@@ -9,7 +9,7 @@ Abra o arquivo `scripts/sync-to-vps.sh` e configure suas credenciais:
 ```bash
 VPS_USER="seu_usuario"        # Usuário SSH do VPS
 VPS_HOST="seu_vps.com.br"     # IP ou domínio do VPS
-VPS_PATH="/var/www/agendazap" # Caminho da aplicação no VPS
+VPS_PATH="/var/www/zapby" # Caminho da aplicação no VPS
 ```
 
 ### 2. Configure acesso SSH sem senha (Recomendado)
@@ -37,8 +37,8 @@ php -v
 composer --version
 
 # Permissões corretas
-sudo chown -R seu_usuario:www-data /var/www/agendazap
-sudo chmod -R 775 /var/www/agendazap
+sudo chown -R seu_usuario:www-data /var/www/zapby
+sudo chmod -R 775 /var/www/zapby
 ```
 
 ## 🔄 Como Sincronizar
@@ -61,7 +61,7 @@ Este comando irá:
 
 ```bash
 rsync -avz --exclude='vendor/' --exclude='node_modules/' --exclude='.env' \
-  ./ seu_usuario@seu_vps.com.br:/var/www/agendazap/
+  ./ seu_usuario@seu_vps.com.br:/var/www/zapby/
 ```
 
 ## 📋 Checklist Pós-Sincronização
@@ -71,7 +71,7 @@ rsync -avz --exclude='vendor/' --exclude='node_modules/' --exclude='.env' \
 1. **Verificar .env**
 ```bash
 ssh seu_usuario@seu_vps.com.br
-cd /var/www/agendazap
+cd /var/www/zapby
 cat .env  # Verificar se existe e está configurado
 ```
 
@@ -103,7 +103,7 @@ sudo systemctl restart nginx
 sudo systemctl restart php8.2-fpm
 
 # Queue workers (se estiver usando)
-sudo supervisorctl restart agendazap-worker:*
+sudo supervisorctl restart zapby-worker:*
 ```
 
 ## 🔍 Verificação
@@ -112,7 +112,7 @@ sudo supervisorctl restart agendazap-worker:*
 
 ```bash
 # No VPS
-cd /var/www/agendazap
+cd /var/www/zapby
 
 # Testar conexão com banco
 php artisan tinker
@@ -137,26 +137,26 @@ tail -f storage/logs/laravel.log
 ### Erro de permissão
 
 ```bash
-ssh seu_usuario@seu_vps.com.br "cd /var/www/agendazap && sudo chown -R www-data:www-data storage bootstrap/cache && sudo chmod -R 775 storage bootstrap/cache"
+ssh seu_usuario@seu_vps.com.br "cd /var/www/zapby && sudo chown -R www-data:www-data storage bootstrap/cache && sudo chmod -R 775 storage bootstrap/cache"
 ```
 
 ### Erro de dependências
 
 ```bash
-ssh seu_usuario@seu_vps.com.br "cd /var/www/agendazap && composer install --no-dev --optimize-autoloader"
+ssh seu_usuario@seu_vps.com.br "cd /var/www/zapby && composer install --no-dev --optimize-autoloader"
 ```
 
 ### Cache desatualizado
 
 ```bash
-ssh seu_usuario@seu_vps.com.br "cd /var/www/agendazap && php artisan config:clear && php artisan cache:clear && php artisan route:cache && php artisan view:cache"
+ssh seu_usuario@seu_vps.com.br "cd /var/www/zapby && php artisan config:clear && php artisan cache:clear && php artisan route:cache && php artisan view:cache"
 ```
 
 ### Migration falhou
 
 ```bash
-ssh seu_usuario@seu_vps.com.br "cd /var/www/agendazap && php artisan migrate:status"
-ssh seu_usuario@seu_vps.com.br "cd /var/www/agendazap && php artisan migrate --force"
+ssh seu_usuario@seu_vps.com.br "cd /var/www/zapby && php artisan migrate:status"
+ssh seu_usuario@seu_vps.com.br "cd /var/www/zapby && php artisan migrate --force"
 ```
 
 ## 📝 Variáveis de Ambiente Importantes
@@ -213,13 +213,13 @@ Crie aliases no seu `~/.bashrc` ou `~/.zshrc`:
 
 ```bash
 # Sincronizar com VPS
-alias sync-vps='cd ~/projetos/agendazap && ./scripts/sync-to-vps.sh'
+alias sync-vps='cd ~/projetos/zapby && ./scripts/sync-to-vps.sh'
 
 # Conectar no VPS
 alias vps='ssh seu_usuario@seu_vps.com.br'
 
 # Ver logs do VPS
-alias vps-logs='ssh seu_usuario@seu_vps.com.br "tail -f /var/www/agendazap/storage/logs/laravel.log"'
+alias vps-logs='ssh seu_usuario@seu_vps.com.br "tail -f /var/www/zapby/storage/logs/laravel.log"'
 ```
 
 Depois recarregue:

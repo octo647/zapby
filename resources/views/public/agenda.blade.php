@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', $professional->name . ' - AgendaPro')
+@section('title', $professional->name . ' - Zapby')
 
 @section('content')
 <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">

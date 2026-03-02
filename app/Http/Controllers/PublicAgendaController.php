@@ -78,15 +78,18 @@ class PublicAgendaController extends Controller
     {
         $slots = [];
         $workingHours = $professional->working_hours;
-        $workingDays = $professional->working_days;
+        $workingDays = $professional->working_days ?? [];
+        
+        // Converter strings para inteiros se necessário
+        $workingDays = array_map('intval', $workingDays);
 
         // Próximos 7 dias
         for ($i = 0; $i < 7; $i++) {
             $date = Carbon::now()->addDays($i);
             $dayOfWeek = $date->dayOfWeek;
 
-            // Verifica se o profissional trabalha neste dia
-            if (!in_array($dayOfWeek, $workingDays)) {
+            // Verifica se o profissional trabalha neste dia (com strict comparison)
+            if (!in_array($dayOfWeek, $workingDays, true)) {
                 continue;
             }
 

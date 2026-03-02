@@ -95,6 +95,9 @@
                                 Cliente
                             </th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Serviço
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 WhatsApp
                             </th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -137,15 +140,16 @@
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">
+                                        {{ $appointment->service ?? '-' }}
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
                                     @php
-                                        // Usa phone_number se existir, senão tenta client_whatsapp
-                                        $phoneNumber = $appointment->phone_number;
-                                        if (!$phoneNumber) {
-                                            $cleanWhatsapp = preg_replace('/[^0-9]/', '', $appointment->client_whatsapp);
-                                            // Só usa se NÃO for LID (LIDs têm 15 dígitos)
-                                            $phoneNumber = (strlen($cleanWhatsapp) >= 10 && strlen($cleanWhatsapp) <= 13) ? $cleanWhatsapp : null;
-                                        }
-                                        $isValidPhone = $phoneNumber && strlen($phoneNumber) >= 10 && strlen($phoneNumber) <= 13;
+                                        // Usar client_whatsapp que contém o número correto
+                                        $phoneNumber = $appointment->client_whatsapp ?? '';
+                                        $phoneNumber = preg_replace('/[^0-9]/', '', $phoneNumber);
+                                        $isValidPhone = $phoneNumber && strlen($phoneNumber) >= 10 && strlen($phoneNumber) <= 15;
                                     @endphp
                                     @if($isValidPhone)
                                         <a href="https://wa.me/{{ $phoneNumber }}" 
@@ -267,18 +271,27 @@
                                 </div>
                             </div>
                         </div>
-
+                        <!-- Serviço -->
+                        @if($appointment->service)
+                        <div class="flex items-center gap-3 mb-3 pb-3 border-b border-gray-200">
+                            <div class="bg-purple-100 rounded-full p-2">
+                                <span class="text-xl">💼</span>
+                            </div>
+                            <div class="flex-1">
+                                <div class="text-xs text-gray-500">Serviço</div>
+                                <div class="text-sm font-semibold text-gray-900">
+                                    {{ $appointment->service }}
+                                </div>
+                            </div>
+                        </div>
+                        @endif
                         <!-- Ações -->
                         <div class="flex gap-2">
                             @php
-                                // Usa phone_number se existir, senão tenta client_whatsapp
-                                $phoneNumberCard = $appointment->phone_number;
-                                if (!$phoneNumberCard) {
-                                    $cleanWhatsapp = preg_replace('/[^0-9]/', '', $appointment->client_whatsapp);
-                                    // Só usa se NÃO for LID (LIDs têm 15 dígitos)
-                                    $phoneNumberCard = (strlen($cleanWhatsapp) >= 10 && strlen($cleanWhatsapp) <= 13) ? $cleanWhatsapp : null;
-                                }
-                                $isValidPhoneCard = $phoneNumberCard && strlen($phoneNumberCard) >= 10 && strlen($phoneNumberCard) <= 13;
+                                // Usar client_whatsapp que contém o número correto
+                                $phoneNumberCard = $appointment->client_whatsapp ?? '';
+                                $phoneNumberCard = preg_replace('/[^0-9]/', '', $phoneNumberCard);
+                                $isValidPhoneCard = $phoneNumberCard && strlen($phoneNumberCard) >= 10 && strlen($phoneNumberCard) <= 15;
                             @endphp
                             
                             @if($isValidPhoneCard)

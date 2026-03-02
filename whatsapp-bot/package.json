@@ -1,14 +1,14 @@
 {
-  "name": "agendazap-whatsapp-bot",
+  "name": "zapby-whatsapp-bot",
   "version": "1.0.0",
-  "description": "Bot de lembretes de agendamento - AgendaZap",
+  "description": "Bot de lembretes de agendamento - Zapby",
   "main": "index.js",
   "type": "module",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
-    "@whiskeysockets/baileys": "^6.7.0",
+    "baileys": "^7.0.0-rc.9",
     "qrcode-terminal": "^0.12.0"
   }
 }

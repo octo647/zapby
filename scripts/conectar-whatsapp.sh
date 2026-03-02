@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Script para conectar WhatsApp na Evolution API
-# Instância: agendazap
+# Instância: zapby
 
-API_KEY='AgendaZap2026!Secure'
-INSTANCE='agendazap'
+API_KEY='Zapby2026!Secure'
+INSTANCE='zapby'
 
 echo "🚀 Conectando WhatsApp - Instância: $INSTANCE"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

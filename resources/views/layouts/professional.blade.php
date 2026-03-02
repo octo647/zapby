@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'Dashboard') - AgendaZap</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>@yield('title', 'Painel') - ZapBy</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         [x-cloak] { display: none !important; }
@@ -17,12 +18,12 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
-                    <h1 class="text-2xl font-bold text-indigo-600">AgendaZap</h1>
+                    <h1 class="text-2xl font-bold text-indigo-600">ZapBy</h1>
                     
                     <!-- Desktop Menu -->
                     <div class="hidden md:flex ml-10 space-x-4">
                         <a href="{{ route('professional.dashboard') }}" class="px-3 py-2 rounded-md text-sm font-medium {{ request()->routeIs('professional.dashboard') ? 'bg-indigo-100 text-indigo-700' : 'text-gray-700 hover:bg-gray-100' }}">
-                            Dashboard
+                            Painel
                         </a>
                         <a href="{{ route('professional.appointments') }}" class="px-3 py-2 rounded-md text-sm font-medium {{ request()->routeIs('professional.appointments') ? 'bg-indigo-100 text-indigo-700' : 'text-gray-700 hover:bg-gray-100' }}">
                             Agendamentos
@@ -32,6 +33,12 @@
                         </a>
                         <a href="{{ route('professional.settings') }}" class="px-3 py-2 rounded-md text-sm font-medium {{ request()->routeIs('professional.settings') ? 'bg-indigo-100 text-indigo-700' : 'text-gray-700 hover:bg-gray-100' }}">
                             Configurações
+                        </a>
+                        <a href="{{ route('professional.subscription') }}" class="px-3 py-2 rounded-md text-sm font-medium {{ request()->routeIs('professional.subscription*') ? 'bg-indigo-100 text-indigo-700' : 'text-gray-700 hover:bg-gray-100' }}">
+                            Assinatura
+                            @if(Auth::guard('professional')->user()->subscription && Auth::guard('professional')->user()->subscription->status === 'trial')
+                                <span class="ml-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Trial</span>
+                            @endif
                         </a>
                     </div>
                 </div>
@@ -67,7 +74,7 @@
         <div id="mobile-menu" class="hidden md:hidden">
             <div class="px-2 pt-2 pb-3 space-y-1">
                 <a href="{{ route('professional.dashboard') }}" class="block px-3 py-2 rounded-md text-base font-medium {{ request()->routeIs('professional.dashboard') ? 'bg-indigo-100 text-indigo-700' : 'text-gray-700 hover:bg-gray-100' }}">
-                    📊 Dashboard
+                    📊 Painel
                 </a>
                 <a href="{{ route('professional.appointments') }}" class="block px-3 py-2 rounded-md text-base font-medium {{ request()->routeIs('professional.appointments') ? 'bg-indigo-100 text-indigo-700' : 'text-gray-700 hover:bg-gray-100' }}">
                     📅 Agendamentos
@@ -77,6 +84,12 @@
                 </a>
                 <a href="{{ route('professional.settings') }}" class="block px-3 py-2 rounded-md text-base font-medium {{ request()->routeIs('professional.settings') ? 'bg-indigo-100 text-indigo-700' : 'text-gray-700 hover:bg-gray-100' }}">
                     ⚙️ Configurações
+                </a>
+                <a href="{{ route('professional.subscription') }}" class="block px-3 py-2 rounded-md text-base font-medium {{ request()->routeIs('professional.subscription*') ? 'bg-indigo-100 text-indigo-700' : 'text-gray-700 hover:bg-gray-100' }}">
+                    💳 Assinatura
+                    @if(Auth::guard('professional')->user()->subscription && Auth::guard('professional')->user()->subscription->status === 'trial')
+                        <span class="ml-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Trial</span>
+                    @endif
                 </a>
                 
                 <!-- User info and logout on mobile -->

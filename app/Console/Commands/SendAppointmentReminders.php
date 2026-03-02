@@ -29,18 +29,22 @@ class SendAppointmentReminders extends Command
     public function handle()
     {
         $hours = (int) $this->option('hours');
-        $targetDateTime = Carbon::now()->addHours($hours);
+        $now = Carbon::now();
         
-        $this->info("Buscando agendamentos para aproximadamente {$hours} horas à frente...");
-        $this->info("Data/hora alvo: " . $targetDateTime->format('d/m/Y H:i'));
+        $this->info("Buscando agendamentos para lembrete de {$hours}h antes...");
+        
+        // Buscar agendamentos que estão entre ($hours - 1h) e ($hours) à frente
+        // Para 2h: buscar entre 1h e 2h à frente
+        // Para 24h: buscar entre 23h e 24h à frente
+        $startDateTime = $now->copy()->addHours($hours - 1);
+        $endDateTime = $now->copy()->addHours($hours);
 
-        // Buscar agendamentos na data/hora alvo (com margem de 1 hora)
-        $startTime = $targetDateTime->copy()->subMinutes(30);
-        $endTime = $targetDateTime->copy()->addMinutes(30);
+        $this->info("Janela de busca: " . $startDateTime->format('d/m/Y H:i') . " até " . $endDateTime->format('d/m/Y H:i'));
 
-        $appointments = Appointment::where('date', $targetDateTime->format('Y-m-d'))
-            ->whereTime('time', '>=', $startTime->format('H:i:s'))
-            ->whereTime('time', '<=', $endTime->format('H:i:s'))
+        // Buscar na mesma data
+        $appointments = Appointment::where('date', $startDateTime->format('Y-m-d'))
+            ->whereTime('time', '>=', $startDateTime->format('H:i:s'))
+            ->whereTime('time', '<=', $endDateTime->format('H:i:s'))
             ->whereIn('status', ['pending', 'confirmed'])
             ->get();
 

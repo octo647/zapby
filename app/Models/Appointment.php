@@ -12,6 +12,8 @@ class Appointment extends Model
         'professional_id',
         'client_name',
         'client_whatsapp',
+        'phone_number',
+        'service',
         'date',
         'time',
         'duration',

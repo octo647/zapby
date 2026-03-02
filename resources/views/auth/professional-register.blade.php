@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cadastro - AgendaZap</title>
+    <title>Cadastro - ZapBy</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 min-h-screen flex items-center justify-center p-4">
@@ -43,6 +43,23 @@
                     autofocus
                     placeholder="Digite seu nome"
                     class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                >
+            </div>
+
+            <div class="mb-4">
+                <label for="cpf" class="block text-sm font-medium text-gray-700 mb-2">
+                    📋 CPF
+                </label>
+                <input 
+                    type="text" 
+                    id="cpf" 
+                    name="cpf" 
+                    value="{{ old('cpf') }}"
+                    required
+                    placeholder="000.000.000-00"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    oninput="this.value = formatCPF(this.value)"
+                    maxlength="14"
                 >
             </div>
 
@@ -124,9 +141,14 @@
         </div>
 
         <div class="mt-4 pt-4 border-t border-gray-200">
-            <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+            <div class="bg-green-50 border border-green-200 rounded-lg p-3 mb-2">
                 <p class="text-xs text-green-800 text-center">
-                    🎉 <strong>30 dias grátis</strong> para testar todas as funcionalidades
+                    🎉 <strong>7 dias grátis</strong> para testar todas as funcionalidades
+                </p>
+            </div>
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p class="text-xs text-blue-800 text-center">
+                    💰 Após o período de teste: <strong>R$ 19,90/mês</strong>
                 </p>
             </div>
         </div>
@@ -149,6 +171,25 @@
                 value = value.replace(/^(\d{2})(\d{0,5})/, '($1) $2');
             } else if (value.length > 0) {
                 value = value.replace(/^(\d*)/, '($1');
+            }
+            
+            return value;
+        }
+
+        function formatCPF(value) {
+            // Remove tudo que não é dígito
+            value = value.replace(/\D/g, '');
+            
+            // Limita a 11 dígitos
+            value = value.substring(0, 11);
+            
+            // Formata: 000.000.000-00
+            if (value.length > 9) {
+                value = value.replace(/^(\d{3})(\d{3})(\d{3})(\d{2}).*/, '$1.$2.$3-$4');
+            } else if (value.length > 6) {
+                value = value.replace(/^(\d{3})(\d{3})(\d{0,3}).*/, '$1.$2.$3');
+            } else if (value.length > 3) {
+                value = value.replace(/^(\d{3})(\d{0,3})/, '$1.$2');
             }
             
             return value;
