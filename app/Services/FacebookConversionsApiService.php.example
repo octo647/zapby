@@ -1,0 +1,365 @@
+<?php
+
+/**
+ * Exemplo de implementação do Facebook Conversions API (Server-Side Events)
+ * para rastrear o evento Subscribe quando a assinatura é confirmada via webhook.
+ * 
+ * IMPORTANTE: Este é um arquivo de EXEMPLO. Não está sendo usado no código atual.
+ * 
+ * Para implementar:
+ * 1. Instale o SDK do Facebook: composer require facebook/php-business-sdk
+ * 2. Configure as credenciais no .env
+ * 3. Adicione o código abaixo no AsaasWebhookController.php
+ */
+
+namespace App\Services;
+
+use FacebookAds\Api;
+use FacebookAds\Object\ServerSide\ActionSource;
+use FacebookAds\Object\ServerSide\CustomData;
+use FacebookAds\Object\ServerSide\Event;
+use FacebookAds\Object\ServerSide\EventRequest;
+use FacebookAds\Object\ServerSide\UserData;
+use Illuminate\Support\Facades\Log;
+
+class FacebookConversionsApiService
+{
+    /**
+     * Envia evento Subscribe para o Facebook via Conversions API
+     * 
+     * @param \App\Models\Professional $professional
+     * @param \App\Models\Subscription $subscription
+     * @return void
+     */
+    public static function sendSubscribeEvent($professional, $subscription)
+    {
+        // Verificar se o Pixel ID está configurado
+        $pixelId = env('FACEBOOK_PIXEL_ID');
+        $accessToken = env('FACEBOOK_CONVERSIONS_API_TOKEN');
+
+        if (!$pixelId || !$accessToken) {
+            Log::warning('Facebook Conversions API: Credenciais não configuradas');
+            return;
+        }
+
+        try {
+            // Inicializar API do Facebook
+            Api::init(null, null, $accessToken);
+
+            // Preparar dados do usuário (hasheados automaticamente pelo SDK)
+            $userData = (new UserData())
+                ->setEmail($professional->email)
+                ->setPhone($professional->whatsapp)
+                ->setFirstName(explode(' ', $professional->name)[0] ?? null)
+                ->setLastName(explode(' ', $professional->name)[1] ?? null)
+                ->setClientIpAddress(request()->ip())
+                ->setClientUserAgent(request()->header('User-Agent'));
+
+            // Preparar dados customizados
+            $customData = (new CustomData())
+                ->setValue($subscription->amount)
+                ->setCurrency('BRL')
+                ->setContentName('Monthly Subscription')
+                ->setContentCategory('Subscription')
+                ->setContentType('product')
+                ->setCustomProperties([
+                    'subscription_id' => $subscription->id,
+                    'subscription_status' => $subscription->status,
+                    'plan' => 'Professional Monthly',
+                    'trial_used' => $professional->trial_ends_at ? true : false,
+                ]);
+
+            // Criar evento
+            $event = (new Event())
+                ->setEventName('Subscribe')
+                ->setEventTime(time())
+                ->setEventSourceUrl(url('/'))
+                ->setActionSource(ActionSource::WEBSITE)
+                ->setUserData($userData)
+                ->setCustomData($customData);
+
+            // Criar request
+            $eventRequest = (new EventRequest($pixelId))
+                ->setEvents([$event])
+                ->setTestEventCode(env('FACEBOOK_TEST_EVENT_CODE')); // Apenas para testes
+
+            // Enviar evento
+            $response = $eventRequest->execute();
+
+            Log::info('Facebook Conversions API: Subscribe event sent successfully', [
+                'professional_id' => $professional->id,
+                'subscription_id' => $subscription->id,
+                'events_received' => $response->getEventsReceived(),
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Facebook Conversions API: Error sending Subscribe event', [
+                'error' => $e->getMessage(),
+                'professional_id' => $professional->id ?? null,
+            ]);
+        }
+    }
+
+    /**
+     * Envia evento Purchase para rastreamento adicional
+     * (útil se você quiser rastrear Subscribe como Purchase também)
+     */
+    public static function sendPurchaseEvent($professional, $subscription)
+    {
+        $pixelId = env('FACEBOOK_PIXEL_ID');
+        $accessToken = env('FACEBOOK_CONVERSIONS_API_TOKEN');
+
+        if (!$pixelId || !$accessToken) {
+            return;
+        }
+
+        try {
+            Api::init(null, null, $accessToken);
+
+            $userData = (new UserData())
+                ->setEmail($professional->email)
+                ->setPhone($professional->whatsapp)
+                ->setClientIpAddress(request()->ip())
+                ->setClientUserAgent(request()->header('User-Agent'));
+
+            $customData = (new CustomData())
+                ->setValue($subscription->amount)
+                ->setCurrency('BRL')
+                ->setContentName('Monthly Subscription')
+                ->setContentType('product')
+                ->setOrderId($subscription->asaas_subscription_id);
+
+            $event = (new Event())
+                ->setEventName('Purchase')
+                ->setEventTime(time())
+                ->setEventSourceUrl(url('/'))
+                ->setActionSource(ActionSource::WEBSITE)
+                ->setUserData($userData)
+                ->setCustomData($customData);
+
+            $eventRequest = (new EventRequest($pixelId))
+                ->setEvents([$event]);
+
+            $response = $eventRequest->execute();
+
+            Log::info('Facebook Conversions API: Purchase event sent', [
+                'professional_id' => $professional->id,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Facebook Conversions API: Error sending Purchase event', [
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Envia evento InitiateCheckout quando usuário clica para ativar assinatura
+     */
+    public static function sendInitiateCheckoutEvent($professional)
+    {
+        // Implementação similar aos métodos acima
+        // Disparar quando o formulário de ativação é submetido
+    }
+}
+
+/**
+ * ============================================================================
+ * COMO INTEGRAR NO AsaasWebhookController.php
+ * ============================================================================
+ * 
+ * No método handlePaymentReceived(), adicione após salvar a subscription:
+ */
+
+// AsaasWebhookController.php - linha ~145
+private function handlePaymentReceived(Request $request)
+{
+    $subscriptionId = $request->input('payment.subscription');
+    
+    if (!$subscriptionId) {
+        Log::warning('Asaas Webhook: Payment without subscription ID');
+        return;
+    }
+
+    $subscription = Subscription::where('asaas_subscription_id', $subscriptionId)->first();
+    
+    if (!$subscription) {
+        Log::debug('Zapby Webhook: Subscription not found in Zapby DB', [
+            'asaas_subscription_id' => $subscriptionId,
+        ]);
+        return;
+    }
+
+    // Verificar se é a primeira confirmação (conversão de trial para pago)
+    $isFirstPayment = $subscription->status === 'trial';
+
+    // Update subscription status to active
+    $subscription->status = 'active';
+    
+    // Update next due date based on payment
+    $dueDate = $request->input('payment.dueDate');
+    if ($dueDate) {
+        $subscription->next_due_date = \Carbon\Carbon::parse($dueDate)->addMonth();
+    }
+    
+    $subscription->save();
+
+    Log::info('Asaas Webhook: Subscription activated', [
+        'subscription_id' => $subscription->id,
+        'professional_id' => $subscription->professional_id,
+        'next_due_date' => $subscription->next_due_date,
+    ]);
+
+    // ========== ADICIONAR ESTE CÓDIGO ==========
+    // Enviar evento Subscribe para Facebook apenas na primeira confirmação
+    if ($isFirstPayment) {
+        try {
+            $professional = $subscription->professional;
+            
+            // Enviar para Facebook Conversions API (server-side)
+            \App\Services\FacebookConversionsApiService::sendSubscribeEvent(
+                $professional, 
+                $subscription
+            );
+
+            // Opcional: enviar como Purchase também
+            // \App\Services\FacebookConversionsApiService::sendPurchaseEvent(
+            //     $professional, 
+            //     $subscription
+            // );
+
+        } catch (\Exception $e) {
+            Log::error('Facebook Conversions API failed but subscription was activated', [
+                'error' => $e->getMessage(),
+            ]);
+            // Não falhar o webhook por causa do Facebook
+        }
+    }
+    // ========== FIM DO CÓDIGO ADICIONAL ==========
+}
+
+/**
+ * ============================================================================
+ * CONFIGURAÇÃO NO .ENV
+ * ============================================================================
+ * 
+ * Adicione estas variáveis:
+ */
+
+/*
+# Facebook Pixel & Conversions API
+FACEBOOK_PIXEL_ID=2150463045748997
+FACEBOOK_CONVERSIONS_API_TOKEN=seu_token_aqui
+FACEBOOK_TEST_EVENT_CODE=TEST12345  # Apenas para testes, remover em produção
+*/
+
+/**
+ * ============================================================================
+ * COMO OBTER O ACCESS TOKEN
+ * ============================================================================
+ * 
+ * 1. Acesse https://developers.facebook.com/tools/accesstoken/
+ * 2. Gere um token de acesso de longa duração para o seu app
+ * 3. Ou use o Business Manager:
+ *    - Configurações → Fontes de Dados → Pixels
+ *    - Clique no seu pixel
+ *    - Configurações → Conversions API → Gerar token
+ * 
+ * IMPORTANTE: O token precisa das permissões:
+ * - ads_management
+ * - business_management
+ */
+
+/**
+ * ============================================================================
+ * INSTALAÇÃO DO SDK
+ * ============================================================================
+ */
+
+/*
+# Execute no terminal:
+composer require facebook/php-business-sdk
+
+# Isso instalará o SDK oficial do Facebook para PHP
+# Versão recomendada: ^11.0
+*/
+
+/**
+ * ============================================================================
+ * VANTAGENS DO SERVER-SIDE TRACKING
+ * ============================================================================
+ * 
+ * 1. ✅ Não é bloqueado por ad blockers
+ * 2. ✅ Maior precisão de dados
+ * 3. ✅ Não depende de JavaScript no navegador
+ * 4. ✅ Funciona mesmo se o usuário sair da página rapidamente
+ * 5. ✅ Melhor para iOS 14+ (limitações de tracking)
+ * 6. ✅ Dados são hasheados antes de enviar (LGPD compliant)
+ * 
+ * DESVANTAGENS:
+ * 1. ❌ Requer mais configuração
+ * 2. ❌ Precisa de access token com permissões adequadas
+ * 3. ❌ Match rate pode ser menor se não tiver dados do usuário
+ */
+
+/**
+ * ============================================================================
+ * TESTE DE INTEGRAÇÃO
+ * ============================================================================
+ * 
+ * 1. Configure FACEBOOK_TEST_EVENT_CODE no .env
+ * 2. Faça um teste de assinatura
+ * 3. Vá em Events Manager → Test Events
+ * 4. Você verá o evento chegando em tempo real
+ * 5. Remova o TEST_EVENT_CODE quando colocar em produção
+ */
+
+/**
+ * ============================================================================
+ * MONITORAMENTO
+ * ============================================================================
+ */
+
+// Adicione logs detalhados:
+Log::channel('facebook')->info('Subscribe event', [
+    'event' => 'Subscribe',
+    'value' => $subscription->amount,
+    'currency' => 'BRL',
+    'professional_id' => $professional->id,
+    'subscription_id' => $subscription->id,
+    'timestamp' => now(),
+]);
+
+// Configure um canal separado em config/logging.php:
+/*
+'channels' => [
+    'facebook' => [
+        'driver' => 'daily',
+        'path' => storage_path('logs/facebook-events.log'),
+        'level' => 'info',
+        'days' => 14,
+    ],
+],
+*/
+
+/**
+ * ============================================================================
+ * TROUBLESHOOTING
+ * ============================================================================
+ * 
+ * Problema: "Invalid access token"
+ * Solução: Gere um novo token de longa duração
+ * 
+ * Problema: "No matching entries in user data"
+ * Solução: Certifique-se de enviar email OU phone no UserData
+ * 
+ * Problema: Eventos não aparecem no Events Manager
+ * Solução: 
+ * - Verifique se o Pixel ID está correto
+ * - Verifique os logs em storage/logs/facebook-events.log
+ * - Use o TEST_EVENT_CODE para debug
+ * - Aguarde até 20 minutos (eventos podem ter delay)
+ * 
+ * Problema: "Test event code is invalid"
+ * Solução: Gere um novo código em Events Manager → Test Events
+ */

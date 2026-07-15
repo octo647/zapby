@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# Areas with private account data
+Disallow: /admin
+Disallow: /professional
+
+Sitemap: https://zapby.com.br/sitemap.xml

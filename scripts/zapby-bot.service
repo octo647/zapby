@@ -1,0 +1,20 @@
+[Unit]
+Description=Zapby WhatsApp Bot
+After=network.target mysql.service
+
+[Service]
+Type=simple
+User=helder
+WorkingDirectory=/var/www/zapby/whatsapp-bot
+ExecStart=/home/helder/.nvm/versions/node/v24.12.0/bin/node index.js
+Restart=always
+RestartSec=10
+StandardOutput=append:/var/www/zapby/storage/logs/whatsapp-bot.log
+StandardError=append:/var/www/zapby/storage/logs/whatsapp-bot-error.log
+
+# Variables de ambiente
+Environment=NODE_ENV=production
+Environment=PATH=/home/helder/.nvm/versions/node/v24.12.0/bin:/usr/local/bin:/usr/bin:/bin
+
+[Install]
+WantedBy=multi-user.target

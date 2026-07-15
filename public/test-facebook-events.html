@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Eventos Facebook Pixel - ZapBy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Facebook Pixel Code -->
+    <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', '2150463045748997');
+    fbq('track', 'PageView');
+    </script>
+    <noscript><img height="1" width="1" style="display:none"
+    src="https://www.facebook.com/tr?id=2150463045748997&ev=PageView&noscript=1"
+    /></noscript>
+    <!-- End Facebook Pixel Code -->
+</head>
+<body class="bg-gray-100 min-h-screen py-12 px-4">
+    <div class="max-w-4xl mx-auto">
+        <div class="bg-white rounded-lg shadow-lg p-8 mb-6">
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">🧪 Teste de Eventos Facebook Pixel</h1>
+            <p class="text-gray-600 mb-6">Use esta página para testar os eventos configurados no sistema ZapBy</p>
+            
+            <!-- Status do Pixel -->
+            <div id="pixel-status" class="mb-6 p-4 rounded-lg bg-gray-50">
+                <h3 class="font-semibold text-gray-900 mb-2">Status do Pixel:</h3>
+                <p id="status-text" class="text-sm text-gray-600">Verificando...</p>
+            </div>
+
+            <!-- Log de Eventos -->
+            <div class="mb-6">
+                <h3 class="font-semibold text-gray-900 mb-3">📊 Log de Eventos Disparados:</h3>
+                <div id="event-log" class="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm h-64 overflow-y-auto">
+                    <div class="text-gray-500">Aguardando eventos...</div>
+                </div>
+            </div>
+
+            <!-- Botões de Teste -->
+            <div class="space-y-4">
+                <h3 class="font-semibold text-gray-900 mb-3">🎯 Testar Eventos:</h3>
+
+                <!-- Lead Event -->
+                <div class="border border-gray-200 rounded-lg p-4">
+                    <h4 class="font-semibold text-gray-800 mb-2">1. Lead</h4>
+                    <p class="text-sm text-gray-600 mb-3">Dispara quando o usuário demonstra interesse (clique em CTA)</p>
+                    <button onclick="testLead()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
+                        Testar Lead
+                    </button>
+                </div>
+
+                <!-- CompleteRegistration Event -->
+                <div class="border border-gray-200 rounded-lg p-4">
+                    <h4 class="font-semibold text-gray-800 mb-2">2. CompleteRegistration</h4>
+                    <p class="text-sm text-gray-600 mb-3">Dispara quando o usuário completa o cadastro</p>
+                    <button onclick="testCompleteRegistration()" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition">
+                        Testar CompleteRegistration
+                    </button>
+                </div>
+
+                <!-- ViewContent Event -->
+                <div class="border border-gray-200 rounded-lg p-4">
+                    <h4 class="font-semibold text-gray-800 mb-2">3. ViewContent</h4>
+                    <p class="text-sm text-gray-600 mb-3">Dispara quando visualiza página de assinatura</p>
+                    <button onclick="testViewContent()" class="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition">
+                        Testar ViewContent
+                    </button>
+                </div>
+
+                <!-- InitiateCheckout Event -->
+                <div class="border border-gray-200 rounded-lg p-4">
+                    <h4 class="font-semibold text-gray-800 mb-2">4. InitiateCheckout</h4>
+                    <p class="text-sm text-gray-600 mb-3">Dispara quando inicia processo de assinatura</p>
+                    <button onclick="testInitiateCheckout()" class="bg-yellow-600 text-white px-6 py-2 rounded-lg hover:bg-yellow-700 transition">
+                        Testar InitiateCheckout
+                    </button>
+                </div>
+
+                <!-- Subscribe Event -->
+                <div class="border border-gray-200 rounded-lg p-4">
+                    <h4 class="font-semibold text-gray-800 mb-2">5. Subscribe</h4>
+                    <p class="text-sm text-gray-600 mb-3">Dispara quando assinatura é confirmada (normalmente backend)</p>
+                    <button onclick="testSubscribe()" class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition">
+                        Testar Subscribe
+                    </button>
+                </div>
+
+                <!-- Custom Event -->
+                <div class="border border-gray-200 rounded-lg p-4">
+                    <h4 class="font-semibold text-gray-800 mb-2">6. Evento Customizado</h4>
+                    <p class="text-sm text-gray-600 mb-3">Teste seu próprio evento customizado</p>
+                    <div class="flex gap-3">
+                        <input 
+                            type="text" 
+                            id="custom-event-name" 
+                            placeholder="Nome do evento" 
+                            class="flex-1 border border-gray-300 rounded-lg px-4 py-2"
+                        >
+                        <button onclick="testCustomEvent()" class="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition">
+                            Disparar
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Instruções -->
+            <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <h4 class="font-semibold text-blue-900 mb-2">📝 Como usar:</h4>
+                <ol class="text-sm text-blue-800 space-y-1 list-decimal list-inside">
+                    <li>Instale o <a href="https://chrome.google.com/webstore/detail/facebook-pixel-helper/fdgfkebogiimcoedlicjlajpkdmockpc" target="_blank" class="underline">Facebook Pixel Helper</a></li>
+                    <li>Clique nos botões acima para disparar eventos</li>
+                    <li>Veja os eventos no log abaixo e no Pixel Helper</li>
+                    <li>Verifique no <a href="https://business.facebook.com/events_manager2/" target="_blank" class="underline">Events Manager</a> (Test Events)</li>
+                </ol>
+            </div>
+
+            <!-- Clear Log -->
+            <div class="mt-6 text-center">
+                <button onclick="clearLog()" class="text-gray-600 hover:text-gray-900 underline">
+                    Limpar Log
+                </button>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center text-gray-600 text-sm">
+            <p>ZapBy - Sistema de Agendamentos</p>
+            <p class="mt-1">
+                <a href="/FACEBOOK_EVENTS_TRACKING.md" class="text-blue-600 hover:underline">Documentação dos Eventos</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Verificar se o pixel está carregado
+        setTimeout(() => {
+            const statusDiv = document.getElementById('status-text');
+            if (typeof fbq === 'function') {
+                statusDiv.innerHTML = '✅ <span class="text-green-600 font-semibold">Facebook Pixel carregado com sucesso!</span>';
+                logEvent('INFO', 'Facebook Pixel inicializado');
+            } else {
+                statusDiv.innerHTML = '❌ <span class="text-red-600 font-semibold">Facebook Pixel não detectado. Verifique o FACEBOOK_PIXEL_ID no .env</span>';
+                logEvent('ERROR', 'Facebook Pixel não foi carregado');
+            }
+        }, 1000);
+
+        // Função para logar eventos
+        function logEvent(type, message, data = null) {
+            const log = document.getElementById('event-log');
+            const timestamp = new Date().toLocaleTimeString('pt-BR');
+            const color = {
+                'INFO': 'text-blue-400',
+                'SUCCESS': 'text-green-400',
+                'ERROR': 'text-red-400',
+                'EVENT': 'text-yellow-400'
+            }[type] || 'text-gray-400';
+
+            let logEntry = `<div class="${color}">[${timestamp}] [${type}] ${message}</div>`;
+            if (data) {
+                logEntry += `<div class="text-gray-500 ml-4">${JSON.stringify(data, null, 2)}</div>`;
+            }
+
+            // Remove mensagem de aguardando
+            if (log.querySelector('.text-gray-500')) {
+                log.innerHTML = '';
+            }
+
+            log.innerHTML += logEntry;
+            log.scrollTop = log.scrollHeight;
+        }
+
+        // Interceptar chamadas do fbq para logar
+        if (typeof fbq !== 'undefined') {
+            const originalFbq = fbq;
+            fbq = function() {
+                const eventType = arguments[0];
+                const eventName = arguments[1];
+                const eventData = arguments[2];
+                
+                logEvent('EVENT', `fbq('${eventType}', '${eventName}')`, eventData);
+                
+                return originalFbq.apply(this, arguments);
+            };
+            fbq.queue = originalFbq.queue;
+            fbq.push = originalFbq.push;
+            fbq.loaded = originalFbq.loaded;
+            fbq.version = originalFbq.version;
+        }
+
+        // Funções de teste
+        function testLead() {
+            fbq('track', 'Lead', {
+                content_name: 'Test Lead Event',
+                source: 'Test Page'
+            });
+            logEvent('SUCCESS', 'Evento Lead disparado com sucesso!');
+        }
+
+        function testCompleteRegistration() {
+            fbq('track', 'CompleteRegistration', {
+                content_name: 'Test Registration',
+                status: 'completed'
+            });
+            logEvent('SUCCESS', 'Evento CompleteRegistration disparado com sucesso!');
+        }
+
+        function testViewContent() {
+            fbq('track', 'ViewContent', {
+                content_name: 'Subscription Page',
+                content_category: 'Subscription'
+            });
+            logEvent('SUCCESS', 'Evento ViewContent disparado com sucesso!');
+        }
+
+        function testInitiateCheckout() {
+            fbq('track', 'InitiateCheckout', {
+                content_name: 'Subscription Activation',
+                value: 19.90,
+                currency: 'BRL'
+            });
+            logEvent('SUCCESS', 'Evento InitiateCheckout disparado com sucesso!');
+        }
+
+        function testSubscribe() {
+            fbq('track', 'Subscribe', {
+                value: 19.90,
+                currency: 'BRL',
+                predicted_ltv: 239.00
+            });
+            logEvent('SUCCESS', 'Evento Subscribe disparado com sucesso!');
+        }
+
+        function testCustomEvent() {
+            const eventName = document.getElementById('custom-event-name').value;
+            if (!eventName) {
+                alert('Digite o nome do evento!');
+                return;
+            }
+            fbq('trackCustom', eventName, {
+                test: true,
+                timestamp: new Date().toISOString()
+            });
+            logEvent('SUCCESS', `Evento customizado '${eventName}' disparado com sucesso!`);
+        }
+
+        function clearLog() {
+            document.getElementById('event-log').innerHTML = '<div class="text-gray-500">Log limpo. Aguardando eventos...</div>';
+        }
+    </script>
+</body>
+</html>
