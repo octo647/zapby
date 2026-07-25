@@ -2,6 +2,20 @@
 
 @section('title', $professional->name . ' - Zapby')
 
+@section('meta')
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Zapby">
+    <meta property="og:title" content="Agende com {{ $professional->name }} pelo Zapby">
+    <meta property="og:description" content="Toque para iniciar seu agendamento.">
+    <meta property="og:url" content="{{ route('agenda.show', ['professional' => $professional->slug]) }}">
+    <meta property="og:image" content="{{ url('/logo_fundo_branco.png') }}">
+    <meta property="og:image:alt" content="Logo do Zapby">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Agende com {{ $professional->name }} pelo Zapby">
+    <meta name="twitter:description" content="Toque para iniciar seu agendamento.">
+    <meta name="twitter:image" content="{{ url('/logo_fundo_branco.png') }}">
+@endsection
+
 @section('content')
 <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
     <div class="bg-white rounded-lg shadow-md p-6 sm:p-8">

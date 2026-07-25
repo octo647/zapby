@@ -6,7 +6,7 @@ use App\Models\Professional;
 
 class PublicAgendaController extends Controller
 {
-    private const ZAPBY_WHATSAPP = '5532998294948';
+    private const ZAPBY_WHATSAPP = '553298294948';
 
     /**
      * Exibe a página pública do profissional

@@ -48,7 +48,7 @@
                                     @if($step['id'] === 'share_link')
                                         Compartilhar
                                     @elseif($isSettingsPage)
-                                        Ir para o bloco
+                                        Configurar
                                     @else
                                         Configurar
                                     @endif

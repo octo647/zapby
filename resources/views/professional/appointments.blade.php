@@ -50,7 +50,7 @@
                             </p>
                             
                             <div class="bg-white/10 rounded-lg p-4 mb-4 break-all font-mono text-sm">
-                                https://wa.me/5532998294948?text={{ $professional->access_key }}
+                                https://wa.me/553298294948?text={{ $professional->access_key }}
                             </div>
                         </div>
                         
@@ -86,7 +86,7 @@
                         
                         <div class="text-xs text-indigo-300 mt-2">
                             🔑 Sua chave: <strong class="text-white">{{ $professional->access_key }}</strong> | 
-                            WhatsApp Bot: <strong class="text-white">(32) 99829-4948</strong>
+                            WhatsApp Bot: <strong class="text-white">(32) 9829-4948</strong>
                         </div>
                     </div>
                 </div>
@@ -404,19 +404,18 @@
 
 @push('scripts')
 <script>
-const professionalName = '{{ $professional->name }}';
-const bookingLink = 'https://wa.me/5532998294948?text={{ $professional->access_key }}';
+const professionalName = @json($professional->name);
+const bookingLink = @json('https://wa.me/553298294948?text=' . rawurlencode($professional->access_key));
 
 function getShareMessage() {
-    return `Agende comigo pelo WhatsApp!\n\n` +
-           `Sou ${professionalName} e agora você pode marcar seu horário direto pelo WhatsApp!\n\n` +
-           `Clique no link:\n${bookingLink}\n\n` +
-           `É rápido, fácil e automático!`;
+    return `Agende comigo!\n\n` +
+           `Sou ${professionalName}. Para marcar seu horário, acesse:\n\n` +
+           `${bookingLink}`;
 }
 
 function copyBookingLink() {
     navigator.clipboard.writeText(bookingLink).then(() => {
-        alert('✅ Link copiado!\n\nCompartilhe este link com seus clientes. Ao clicar, eles serão direcionados ao WhatsApp e poderão agendar automaticamente!');
+        alert('✅ Link copiado!\n\nCompartilhe com seus clientes. Ao clicar, eles serão direcionados ao WhatsApp e poderão agendar automaticamente.');
     }).catch(() => {
         // Fallback para navegadores antigos
         const textarea = document.createElement('textarea');
@@ -430,10 +429,9 @@ function copyBookingLink() {
 }
 
 function shareWhatsApp() {
-    const message = `*Agende comigo pelo WhatsApp!*\n\n` +
-                   `Sou ${professionalName} e agora você pode marcar seu horário direto pelo WhatsApp!\n\n` +
-                   `👉 Clique no link abaixo:\n${bookingLink}\n\n` +
-                   `É rápido, fácil e automático! 🚀`;
+    const message = `*Agende comigo!*\n\n` +
+                   `Sou ${professionalName}. Para marcar seu horário, clique no link:\n\n` +
+                   `${bookingLink}`;
     
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
@@ -456,7 +454,7 @@ function shareFacebook() {
 }
 
 function shareInstagram() {
-    const message = `Agende comigo pelo WhatsApp!\n\n` +
+    const message = `Agende comigo!\n\n` +
                    `Clique no link do meu perfil ou use este:\n${bookingLink}\n\n` +
                    `#agendamento #${professionalName.replace(/\s+/g, '')}`;
     
