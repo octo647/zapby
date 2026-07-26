@@ -10,9 +10,12 @@
     
     <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
         <div class="text-center mb-8">
-            <div onclick=window.location.href="https://zapby.com.br"; class="inline-flex items-center justify-center mb-4">
+            <a
+                href="https://zapby.com.br"
+                class="inline-flex items-center justify-center mb-4 no-underline text-inherit hover:no-underline focus:no-underline"
+            >
                 <img src="/logo_fundo_branco.png" alt="ZapBy" class="w-20 h-20 rounded-full shadow-lg">
-            </div>
+            </a>
             <h1 class="text-4xl font-bold text-gray-900 mb-2">ZapBy</h1>
             <p class="text-gray-600">Área do Profissional</p>
         </div>
