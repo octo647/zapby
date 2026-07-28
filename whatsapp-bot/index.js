@@ -590,7 +590,7 @@ function parseTime(timeStr) {
 //Função de saudação
 function getGreeting(name) {
     return name && name.trim()
-        ? `Olá *${name}*! 👋`
+        ? `Olá ${name.trim()}! 👋`
         : `Olá! 👋`;
 }
 
@@ -1208,7 +1208,7 @@ async function main() {
                                        `*[2]* 📋 Ver seus agendamentos\n\n` +
                                        `💡 Você também pode enviar uma nova chave de acesso!`;
                     } else {
-                        welcomeMessage = `Olá *${getGreeting(name)}* 👋\n\nBem-vindo ao *Zapby*! 📅\n\nSeu contato foi registrado e você receberá lembretes automáticos sobre seus agendamentos.\n\n✨ *Como funciona:*\n\n1️⃣ Receba a *chave de acesso* do profissional\n2️⃣ Envie a chave aqui no chat\n3️⃣ Escolha o serviço, data e horário\n4️⃣ Confirme seu agendamento!\n\n📅 *Consultar seus agendamentos:*\nDigite *[2]* ou *"agenda"* a qualquer momento\n\n💡 Você receberá lembretes automáticos!`;
+                        welcomeMessage = `${getGreeting(name)}\n\nBem-vindo ao *Zapby*! 📅\n\nSeu contato foi registrado e você receberá lembretes automáticos sobre seus agendamentos.\n\n✨ *Como funciona:*\n\n1️⃣ Receba a *chave de acesso* do profissional\n2️⃣ Envie a chave aqui no chat\n3️⃣ Escolha o serviço, data e horário\n4️⃣ Confirme seu agendamento!\n\n📅 *Consultar seus agendamentos:*\nDigite *[2]* ou *"agenda"* a qualquer momento\n\n💡 Você receberá lembretes automáticos!`;
                     }
                 }
 
