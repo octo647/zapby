@@ -124,6 +124,20 @@
   ]
 }
 </script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.video-demonstracao').forEach((video) => {
+        video.addEventListener('ended', () => {
+            const recuo = 0.08;
+
+            if (Number.isFinite(video.duration) && video.duration > recuo) {
+                video.currentTime = video.duration - recuo;
+                video.pause();
+            }
+        });
+    });
+});
+</script>
     
     <style>
         body { font-family: 'Inter', sans-serif; }
@@ -186,7 +200,7 @@
     </nav>
 
     <!-- Hero Section -->
-    <section class="pt-32 pb-20 bg-gradient-to-br from-green-50 to-blue-50">
+    <section class="pt-32 pb-20 " style="background-color: #eff6ff;">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                 <div>
@@ -223,6 +237,7 @@
                     </div>
                     <p class="mt-4 text-sm text-gray-500">✓ Sem cartão de crédito para teste • ✓ Cancele quando quiser</p>
                 </div>
+
                 <div class="hidden lg:block">
                     <div class="bg-white rounded-2xl shadow-2xl p-8 transform rotate-2">
                         <div class="bg-green-100 rounded-xl p-6 mb-4">
@@ -249,7 +264,7 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 <!-- Recurso 1 -->
-                <div class="bg-gray-50 rounded-xl p-8 hover:shadow-lg transition">
+                <div class="bg-blue-50 rounded-xl p-8 hover:shadow-lg transition">
                     <div class="bg-green-100 w-14 h-14 rounded-lg flex items-center justify-center mb-4">
                         <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
@@ -257,6 +272,17 @@
                     </div>
                     <h3 class="text-xl font-bold text-gray-900 mb-2">Agendamento via WhatsApp</h3>
                     <p class="text-gray-600">Seus clientes agendam direto pelo WhatsApp. Simples, rápido e sem precisar baixar apps.</p>
+                    <video
+                        controls
+                        playsinline
+                        preload="none"
+                        poster="{{ asset('celular.png') }}"
+                        class="video-demonstracao mt-6 mx-auto block w-full max-w-[220px] rounded-xl"
+                        aria-label="Demonstração do agendamento pelo WhatsApp"
+                    >
+                        <source src="{{ asset('videos/cliente2.mp4') }}" type="video/mp4">
+                        Seu navegador não suporta vídeos.
+                    </video>
                 </div>
 
                 <!-- Recurso 2 -->
@@ -279,6 +305,16 @@
                     </div>
                     <h3 class="text-xl font-bold text-gray-900 mb-2">Gestão Completa</h3>
                     <p class="text-gray-600">Painel completo para visualizar, cancelar e gerenciar todos os seus agendamentos.</p>
+                    <video
+                        controls
+                        playsinline
+                        preload="none"
+                        class="video-demonstracao mt-6 mx-auto block w-full max-w-[220px] rounded-xl shadow-md"
+                        aria-label="Demonstração do painel profissional"
+                    >
+                        <source src="{{ asset('videos/profissional.mp4') }}" type="video/mp4">
+                        Seu navegador não suporta vídeos.
+                    </video>
                 </div>
 
                 <!-- Recurso 4 -->
@@ -290,6 +326,16 @@
                     </div>
                     <h3 class="text-xl font-bold text-gray-900 mb-2">Horários Flexíveis</h3>
                     <p class="text-gray-600">Configure seus horários de atendimento e bloqueie períodos indisponíveis facilmente.</p>
+                    <video
+                        controls
+                        playsinline
+                        preload="none"
+                        class="video-demonstracao mt-6 mx-auto block w-full max-w-[220px] rounded-xl shadow-md"
+                        aria-label="Demonstração da configuração de dias e horários"
+                    >
+                        <source src="{{ asset('videos/agenda_datas.mp4') }}" type="video/mp4">
+                        Seu navegador não suporta vídeos.
+                    </video>
                 </div>
 
                 <!-- Recurso 5 -->

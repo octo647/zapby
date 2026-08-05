@@ -1,5 +1,5 @@
 // Service Worker para ZapBy PWA
-const CACHE_VERSION = 'zapby-v5-final-android-fix';
+const CACHE_VERSION = 'zapby-v6-video-range-fix';
 const CACHE_NAME = `zapby-cache-${CACHE_VERSION}`;
 const urlsToCache = [
   '/',
@@ -44,6 +44,19 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   // Apenas interceptar requisições GET
   if (event.request.method !== 'GET') {
+    return;
+  }
+
+  const requestUrl = new URL(event.request.url);
+  const isMediaRequest = event.request.destination === 'video'
+    || event.request.destination === 'audio'
+    || requestUrl.pathname.startsWith('/videos/');
+  const isRangeRequest = event.request.headers.has('range');
+
+  // O navegador precisa controlar diretamente as requisições parciais de
+  // áudio e vídeo. Interceptá-las pode substituir um trecho 206 por uma
+  // resposta de fallback text/plain e interromper a reprodução.
+  if (isMediaRequest || isRangeRequest) {
     return;
   }
 
