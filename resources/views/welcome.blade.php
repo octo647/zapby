@@ -276,7 +276,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         controls
                         playsinline
                         preload="none"
-                        poster="{{ asset('celular.png') }}"
+                        poster="{{ asset('agendamento.png') }}"
                         class="video-demonstracao mt-6 mx-auto block w-full max-w-[220px] rounded-xl"
                         aria-label="Demonstração do agendamento pelo WhatsApp"
                     >
@@ -286,7 +286,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
 
                 <!-- Recurso 2 -->
-                <div class="bg-gray-50 rounded-xl p-8 hover:shadow-lg transition">
+                <div class="bg-blue-50 rounded-xl p-8 hover:shadow-lg transition">
                     <div class="bg-blue-100 w-14 h-14 rounded-lg flex items-center justify-center mb-4">
                         <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
@@ -294,10 +294,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <h3 class="text-xl font-bold text-gray-900 mb-2">Lembretes Automáticos</h3>
                     <p class="text-gray-600">Sistema envia lembretes automáticos antes do horário agendado. Reduza faltas!</p>
+                    <img src="{{ asset('lembrete.png') }}" alt="Demonstração do lembrete automático" class="mt-6 mx-auto 
+                    block w-full max-w-[220px] ">
                 </div>
 
                 <!-- Recurso 3 -->
-                <div class="bg-gray-50 rounded-xl p-8 hover:shadow-lg transition">
+                <div class="bg-blue-50 rounded-xl p-8 hover:shadow-lg transition">
                     <div class="bg-purple-100 w-14 h-14 rounded-lg flex items-center justify-center mb-4">
                         <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
@@ -309,7 +311,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         controls
                         playsinline
                         preload="none"
-                        class="video-demonstracao mt-6 mx-auto block w-full max-w-[220px] rounded-xl shadow-md"
+                        poster="{{ asset('gestao.png') }}"
+                        class="video-demonstracao mt-6 mx-auto block w-full max-w-[220px] rounded-xl"
                         aria-label="Demonstração do painel profissional"
                     >
                         <source src="{{ asset('videos/profissional.mp4') }}" type="video/mp4">
@@ -318,7 +321,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
 
                 <!-- Recurso 4 -->
-                <div class="bg-gray-50 rounded-xl p-8 hover:shadow-lg transition">
+                <div class="bg-blue-50 rounded-xl p-8 hover:shadow-lg transition">
                     <div class="bg-yellow-100 w-14 h-14 rounded-lg flex items-center justify-center mb-4">
                         <svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -329,17 +332,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     <video
                         controls
                         playsinline
+                        poster="{{ asset('agendas.png') }}"
                         preload="none"
-                        class="video-demonstracao mt-6 mx-auto block w-full max-w-[220px] rounded-xl shadow-md"
+                        class="video-demonstracao mt-6 mx-auto block w-full max-w-[220px] rounded-xl"
                         aria-label="Demonstração da configuração de dias e horários"
                     >
-                        <source src="{{ asset('videos/agenda_datas.mp4') }}" type="video/mp4">
+                        <source src="{{ asset('videos/agenda.mp4') }}" type="video/mp4">
                         Seu navegador não suporta vídeos.
                     </video>
                 </div>
 
                 <!-- Recurso 5 -->
-                <div class="bg-gray-50 rounded-xl p-8 hover:shadow-lg transition">
+                <div class="bg-blue-50 rounded-xl p-8 hover:shadow-lg transition">
                     <div class="bg-red-100 w-14 h-14 rounded-lg flex items-center justify-center mb-4">
                         <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
@@ -347,10 +351,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <h3 class="text-xl font-bold text-gray-900 mb-2">Múltiplos Serviços</h3>
                     <p class="text-gray-600">Cadastre diferentes serviços com preços e durações personalizadas.</p>
+                    <img src="{{ asset('servicos.png') }}" alt="Demonstração do lembrete automático" class="mt-6 mx-auto 
+                    block w-full max-w-[220px] ">
                 </div>
 
                 <!-- Recurso 6 -->
-                <div class="bg-gray-50 rounded-xl p-8 hover:shadow-lg transition">
+                <div class="bg-blue-50 rounded-xl p-8 hover:shadow-lg transition">
                     <div class="bg-indigo-100 w-14 h-14 rounded-lg flex items-center justify-center mb-4">
                         <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
@@ -358,6 +364,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <h3 class="text-xl font-bold text-gray-900 mb-2">Link Personalizado</h3>
                     <p class="text-gray-600">Compartilhe seu link exclusivo nas redes sociais. Seus clientes agendam na hora!</p>
+                    <img src="{{ asset('link_personalizado.png') }}" alt="Demonstração do link personalizado" 
+                    class="mt-6 mx-auto block w-full max-w-[220px] ">
                 </div>
             </div>
         </div>
