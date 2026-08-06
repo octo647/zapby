@@ -126,7 +126,15 @@
 </script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('.video-demonstracao').forEach((video) => {
+    document.querySelectorAll('.video-demonstracao-container').forEach((container) => {
+        const video = container.querySelector('.video-demonstracao');
+        const botao = container.querySelector('.video-demonstracao-play');
+
+        botao.addEventListener('click', () => video.play());
+        video.addEventListener('click', () => video.paused ? video.play() : video.pause());
+        video.addEventListener('play', () => botao.classList.add('hidden'));
+        video.addEventListener('pause', () => botao.classList.remove('hidden'));
+
         video.addEventListener('ended', () => {
             const recuo = 0.08;
 
@@ -272,17 +280,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <h3 class="text-xl font-bold text-gray-900 mb-2">Agendamento via WhatsApp</h3>
                     <p class="text-gray-600">Seus clientes agendam direto pelo WhatsApp. Simples, rápido e sem precisar baixar apps.</p>
-                    <video
-                        controls
-                        playsinline
-                        preload="none"
-                        poster="{{ asset('agendamento.png') }}"
-                        class="video-demonstracao mt-6 mx-auto block w-full max-w-[220px] rounded-xl"
-                        aria-label="Demonstração do agendamento pelo WhatsApp"
-                    >
-                        <source src="{{ asset('videos/cliente2.mp4') }}" type="video/mp4">
-                        Seu navegador não suporta vídeos.
-                    </video>
+                    <div class="video-demonstracao-container relative mt-6 mx-auto w-full max-w-[220px]">
+                        <video
+                            playsinline
+                            preload="none"
+                            poster="{{ asset('agendamento.png') }}"
+                            class="video-demonstracao block w-full rounded-xl cursor-pointer"
+                            aria-label="Demonstração do agendamento pelo WhatsApp"
+                        >
+                            <source src="{{ asset('videos/cliente2.mp4') }}" type="video/mp4">
+                            Seu navegador não suporta vídeos.
+                        </video>
+                        <button type="button" class="video-demonstracao-play absolute inset-0 m-auto flex h-14 w-14 items-center justify-center rounded-full bg-green-600/90 text-white shadow-lg" aria-label="Reproduzir demonstração do agendamento pelo WhatsApp">
+                            <svg class="ml-1 h-7 w-7" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Recurso 2 -->
@@ -307,17 +319,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <h3 class="text-xl font-bold text-gray-900 mb-2">Gestão Completa</h3>
                     <p class="text-gray-600">Painel completo para visualizar, cancelar e gerenciar todos os seus agendamentos.</p>
-                    <video
-                        controls
-                        playsinline
-                        preload="none"
-                        poster="{{ asset('gestao.png') }}"
-                        class="video-demonstracao mt-6 mx-auto block w-full max-w-[220px] rounded-xl"
-                        aria-label="Demonstração do painel profissional"
-                    >
-                        <source src="{{ asset('videos/profissional.mp4') }}" type="video/mp4">
-                        Seu navegador não suporta vídeos.
-                    </video>
+                    <div class="video-demonstracao-container relative mt-6 mx-auto w-full max-w-[220px]">
+                        <video playsinline preload="none" poster="{{ asset('gestao.png') }}" class="video-demonstracao block w-full rounded-xl cursor-pointer" aria-label="Demonstração do painel profissional">
+                            <source src="{{ asset('videos/profissional.mp4') }}" type="video/mp4">
+                            Seu navegador não suporta vídeos.
+                        </video>
+                        <button type="button" class="video-demonstracao-play absolute inset-0 m-auto flex h-14 w-14 items-center justify-center rounded-full bg-green-600/90 text-white shadow-lg" aria-label="Reproduzir demonstração do painel profissional">
+                            <svg class="ml-1 h-7 w-7" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Recurso 4 -->
@@ -329,17 +339,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <h3 class="text-xl font-bold text-gray-900 mb-2">Horários Flexíveis</h3>
                     <p class="text-gray-600">Configure seus horários de atendimento e bloqueie períodos indisponíveis facilmente.</p>
-                    <video
-                        controls
-                        playsinline
-                        poster="{{ asset('agendas.png') }}"
-                        preload="none"
-                        class="video-demonstracao mt-6 mx-auto block w-full max-w-[220px] rounded-xl"
-                        aria-label="Demonstração da configuração de dias e horários"
-                    >
-                        <source src="{{ asset('videos/agenda.mp4') }}" type="video/mp4">
-                        Seu navegador não suporta vídeos.
-                    </video>
+                    <div class="video-demonstracao-container relative mt-6 mx-auto w-full max-w-[220px]">
+                        <video playsinline poster="{{ asset('agendas.png') }}" preload="none" class="video-demonstracao block w-full rounded-xl cursor-pointer" aria-label="Demonstração da configuração de dias e horários">
+                            <source src="{{ asset('videos/agenda.mp4') }}" type="video/mp4">
+                            Seu navegador não suporta vídeos.
+                        </video>
+                        <button type="button" class="video-demonstracao-play absolute inset-0 m-auto flex h-14 w-14 items-center justify-center rounded-full bg-green-600/90 text-white shadow-lg" aria-label="Reproduzir demonstração da configuração de dias e horários">
+                            <svg class="ml-1 h-7 w-7" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Recurso 5 -->
