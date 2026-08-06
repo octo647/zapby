@@ -267,7 +267,8 @@ document.addEventListener('DOMContentLoaded', () => {
     <section id="recursos" class="py-20 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-10">
-                <h2 class="text-3xl font-bold text-gray-900 mb-4">Tudo que você precisa para gerenciar sua agenda</h2>
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">Tudo o que você precisa para gerenciar sua agenda</h2>
+                <h4 class="text-3xl font-bold text-gray-900 mb-4">Veja o ZapBy em ação</h4>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
