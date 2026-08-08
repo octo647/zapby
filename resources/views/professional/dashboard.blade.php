@@ -9,18 +9,21 @@
     @include('professional.partials.onboarding-banner')
     
     <!-- Header de boas-vindas -->
-    <div class="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg shadow-lg p-6 text-white mb-6">
+    <div class="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg shadow-lg p-6 text-white mb-8">
         <h2 class="text-2xl font-bold mb-2">Olá, {{ $professional->name }}! 👋</h2>
         <p class="text-indigo-100">{{ $professional->profession }}</p>
     </div>
 
     <!-- Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
         <div class="bg-white rounded-lg shadow-md p-6">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-gray-500 text-sm">Agendamentos Hoje</p>
                     <p class="text-3xl font-bold text-gray-900">{{ $todayAppointments->count() }}</p>
+                </div>
+                <div class="bg-indigo-100 rounded-full p-4">
+                    <span class="text-3xl">📅</span>
                 </div>
             </div>
         </div>
@@ -49,6 +52,76 @@
             </div>
         </div>
     </div>
+
+    <!-- Disponibilidade de hoje -->
+    <section class="bg-white rounded-lg shadow-md mb-8" aria-labelledby="today-schedule-title">
+        <div class="px-6 py-4 border-b border-gray-200 sm:flex sm:items-center sm:justify-between">
+            <div>
+                <h3 id="today-schedule-title" class="text-xl font-bold text-gray-900">Horários de hoje</h3>
+                <p class="mt-1 text-sm text-gray-500">Clique em um horário livre para bloqueá-lo por 15 minutos.</p>
+            </div>
+            <div class="mt-3 flex flex-wrap gap-3 text-xs text-gray-600 sm:mt-0" aria-label="Legenda">
+                <span class="flex items-center gap-1"><span class="h-3 w-3 rounded bg-white border border-indigo-300"></span>Livre</span>
+                <span class="flex items-center gap-1"><span class="h-3 w-3 rounded bg-gray-300"></span>Ocupado</span>
+                <span class="flex items-center gap-1"><span class="h-3 w-3 rounded bg-amber-200"></span>Bloqueado</span>
+            </div>
+        </div>
+
+        <div class="p-6">
+            @if($errors->has('start_time'))
+                <p class="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+                    {{ $errors->first('start_time') }}
+                </p>
+            @endif
+
+            @if(count($todaySchedule) > 0)
+                <div class="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
+                    @foreach($todaySchedule as $slot)
+                        @if($slot['status'] === 'free')
+                            <form method="POST" action="{{ route('professional.time-blocks.store') }}"
+                                  onsubmit="return confirm('Bloquear o horário das {{ $slot['start'] }} às {{ $slot['end'] }}?')">
+                                @csrf
+                                <input type="hidden" name="date" value="{{ now()->format('Y-m-d') }}">
+                                <input type="hidden" name="block_type" value="partial">
+                                <input type="hidden" name="start_time" value="{{ $slot['start'] }}">
+                                <input type="hidden" name="end_time" value="{{ $slot['end'] }}">
+                                <input type="hidden" name="reason" value="Bloqueado pelo painel">
+                                <button type="submit"
+                                        class="w-full rounded-lg border border-indigo-300 bg-white px-2 py-3 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                                        title="Bloquear este horário">
+                                    {{ $slot['start'] }}
+                                </button>
+                            </form>
+                        @else
+                            @php
+                                $slotClasses = match($slot['status']) {
+                                    'occupied' => 'bg-gray-300 text-gray-700',
+                                    'blocked' => 'bg-amber-200 text-amber-900',
+                                    default => 'bg-gray-100 text-gray-400',
+                                };
+                                $slotTitle = match($slot['status']) {
+                                    'occupied' => 'Ocupado'.($slot['label'] ? ': '.$slot['label'] : ''),
+                                    'blocked' => 'Bloqueado'.($slot['label'] ? ': '.$slot['label'] : ''),
+                                    default => 'Horário encerrado',
+                                };
+                            @endphp
+                            <div class="rounded-lg px-2 py-3 text-center text-sm font-semibold {{ $slotClasses }}"
+                                 title="{{ $slotTitle }}" aria-label="{{ $slot['start'] }} — {{ $slotTitle }}">
+                                {{ $slot['start'] }}
+                            </div>
+                        @endif
+                    @endforeach
+                </div>
+            @else
+                <div class="py-6 text-center">
+                    <p class="text-gray-600">Não há expediente configurado para hoje.</p>
+                    <a href="{{ route('professional.settings') }}#agenda-settings" class="mt-2 inline-block text-sm font-medium text-indigo-600 hover:text-indigo-800">
+                        Configurar agenda
+                    </a>
+                </div>
+            @endif
+        </div>
+    </section>
 
     <!-- Agendamentos de Hoje -->
     @if($todayAppointments->count() > 0)

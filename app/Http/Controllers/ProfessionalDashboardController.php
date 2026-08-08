@@ -11,6 +11,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Auth;
 use App\Models\ProfessionalWorkPeriod;
+use Carbon\Carbon;
 
 class ProfessionalDashboardController extends Controller
 {
@@ -41,11 +42,14 @@ class ProfessionalDashboardController extends Controller
             ->whereMonth('date', now()->month)
             ->count();
 
+        $todaySchedule = $this->buildTodaySchedule($professional, $todayAppointments);
+
         return view('professional.dashboard', [
             'professional' => $professional,
             'todayAppointments' => $todayAppointments,
             'upcomingAppointments' => $upcomingAppointments,
             'monthlyTotal' => $monthlyTotal,
+            'todaySchedule' => $todaySchedule,
         ]);
     }
 
@@ -381,6 +385,38 @@ class ProfessionalDashboardController extends Controller
             $validated['end_time'] = '23:59';
         }
 
+        $blockStart = Carbon::parse($validated['date'].' '.$validated['start_time']);
+        $blockEnd = Carbon::parse($validated['date'].' '.$validated['end_time']);
+
+        $hasAppointment = $professional->appointments()
+            ->whereDate('date', $validated['date'])
+            ->whereIn('status', ['pending', 'confirmed'])
+            ->get()
+            ->contains(function (Appointment $appointment) use ($blockStart, $blockEnd) {
+                $appointmentStart = Carbon::parse($appointment->date->format('Y-m-d').' '.$appointment->time);
+                $appointmentEnd = $appointmentStart->copy()->addMinutes($appointment->duration);
+
+                return $blockStart->lt($appointmentEnd) && $blockEnd->gt($appointmentStart);
+            });
+
+        if ($hasAppointment) {
+            throw ValidationException::withMessages([
+                'start_time' => 'Esse período já possui um agendamento.',
+            ]);
+        }
+
+        $hasBlock = $professional->timeBlocks()
+            ->whereDate('date', $validated['date'])
+            ->where('start_time', '<', $validated['end_time'])
+            ->where('end_time', '>', $validated['start_time'])
+            ->exists();
+
+        if ($hasBlock) {
+            throw ValidationException::withMessages([
+                'start_time' => 'Esse período já está bloqueado.',
+            ]);
+        }
+
         $professional->timeBlocks()->create([
             'date' => $validated['date'],
             'start_time' => $validated['start_time'],
@@ -389,6 +425,55 @@ class ProfessionalDashboardController extends Controller
         ]);
 
         return back()->with('success', 'Bloqueio criado com sucesso!');
+    }
+
+    private function buildTodaySchedule(Professional $professional, $appointments): array
+    {
+        $today = now()->startOfDay();
+
+        $periods = $professional->usesDatedSchedule()
+            ? $professional->datePeriods()->whereDate('date', $today)->orderBy('start_time')->get()
+            : $professional->workPeriods()->where('weekday', $today->dayOfWeek)->orderBy('start_time')->get();
+
+        $blocks = $professional->timeBlocks()->whereDate('date', $today)->get();
+        $slots = [];
+
+        foreach ($periods as $period) {
+            $current = Carbon::parse($today->format('Y-m-d').' '.$period->start_time);
+            $periodEnd = Carbon::parse($today->format('Y-m-d').' '.$period->end_time);
+
+            while ($current->lt($periodEnd)) {
+                $slotEnd = $current->copy()->addMinutes(15)->min($periodEnd);
+                $appointment = $appointments->first(function (Appointment $appointment) use ($current, $slotEnd) {
+                    if (!in_array($appointment->status, ['pending', 'confirmed'], true)) {
+                        return false;
+                    }
+
+                    $start = Carbon::parse($appointment->date->format('Y-m-d').' '.$appointment->time);
+                    $end = $start->copy()->addMinutes($appointment->duration);
+
+                    return $current->lt($end) && $slotEnd->gt($start);
+                });
+                $block = $blocks->first(function (TimeBlock $block) use ($today, $current, $slotEnd) {
+                    $start = Carbon::parse($today->format('Y-m-d').' '.Carbon::parse($block->start_time)->format('H:i:s'));
+                    $end = Carbon::parse($today->format('Y-m-d').' '.Carbon::parse($block->end_time)->format('H:i:s'));
+
+                    return $current->lt($end) && $slotEnd->gt($start);
+                });
+
+                $status = $appointment ? 'occupied' : ($block ? 'blocked' : ($slotEnd->isPast() ? 'past' : 'free'));
+                $slots[] = [
+                    'start' => $current->format('H:i'),
+                    'end' => $slotEnd->format('H:i'),
+                    'status' => $status,
+                    'label' => $appointment?->client_name ?? $block?->reason,
+                ];
+
+                $current->addMinutes(15);
+            }
+        }
+
+        return $slots;
     }
 
     /**

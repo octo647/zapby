@@ -4,6 +4,7 @@
 use Illuminate\Http\Request;
 use App\Models\Professional;
 use App\Models\Appointment;
+use App\Models\TimeBlock;
 use Illuminate\Support\Facades\Route;
 use Carbon\Carbon;
 
@@ -150,6 +151,9 @@ Route::get('/available-times', function(Request $request) {
     }
         
    $times = [];
+   $timeBlocks = TimeBlock::where('professional_id', $professionalId)
+        ->whereDate('date', $date)
+        ->get();
 
 foreach ($workPeriods as $period) {
 
@@ -200,6 +204,18 @@ foreach ($workPeriods as $period) {
                     break;
                 }
             }
+
+            if (!$hasConflict) {
+                foreach ($timeBlocks as $block) {
+                    $blockStart = Carbon::parse("$date ".Carbon::parse($block->start_time)->format('H:i:s'));
+                    $blockEnd = Carbon::parse("$date ".Carbon::parse($block->end_time)->format('H:i:s'));
+
+                    if ($timeObj->lt($blockEnd) && $endTime->gt($blockStart)) {
+                        $hasConflict = true;
+                        break;
+                    }
+                }
+            }
             
             if (!$hasConflict) {
                 $times[] = $time;
@@ -229,6 +245,22 @@ Route::post('/create-appointment', function(Request $request) {
 
         if (!$phoneNumber && strlen($cleanClientPhone) >= 10 && strlen($cleanClientPhone) <= 13) {
             $phoneNumber = $cleanClientPhone;
+        }
+
+        $appointmentStart = Carbon::parse("$date $time");
+        $appointmentEnd = $appointmentStart->copy()->addMinutes((int) $serviceDuration);
+        $blocked = TimeBlock::where('professional_id', $professionalId)
+            ->whereDate('date', $date)
+            ->get()
+            ->contains(function (TimeBlock $block) use ($date, $appointmentStart, $appointmentEnd) {
+                $blockStart = Carbon::parse($date.' '.Carbon::parse($block->start_time)->format('H:i:s'));
+                $blockEnd = Carbon::parse($date.' '.Carbon::parse($block->end_time)->format('H:i:s'));
+
+                return $appointmentStart->lt($blockEnd) && $appointmentEnd->gt($blockStart);
+            });
+
+        if ($blocked) {
+            return response()->json(['success' => false, 'message' => 'Horário indisponível'], 409);
         }
         
         $appointment = Appointment::create([
