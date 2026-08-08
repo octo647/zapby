@@ -443,7 +443,7 @@ class ProfessionalDashboardController extends Controller
             $periodEnd = Carbon::parse($today->format('Y-m-d').' '.$period->end_time);
 
             while ($current->lt($periodEnd)) {
-                $slotEnd = $current->copy()->addMinutes(15)->min($periodEnd);
+                $slotEnd = $current->copy()->addMinutes(30)->min($periodEnd);
                 $appointment = $appointments->first(function (Appointment $appointment) use ($current, $slotEnd) {
                     if (!in_array($appointment->status, ['pending', 'confirmed'], true)) {
                         return false;
@@ -469,7 +469,7 @@ class ProfessionalDashboardController extends Controller
                     'label' => $appointment?->client_name ?? $block?->reason,
                 ];
 
-                $current->addMinutes(15);
+                $current->addMinutes(30);
             }
         }
 

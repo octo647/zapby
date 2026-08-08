@@ -58,7 +58,7 @@
         <div class="px-6 py-4 border-b border-gray-200 sm:flex sm:items-center sm:justify-between">
             <div>
                 <h3 id="today-schedule-title" class="text-xl font-bold text-gray-900">Horários de hoje</h3>
-                <p class="mt-1 text-sm text-gray-500">Clique em um horário livre para bloqueá-lo por 15 minutos.</p>
+                <p class="mt-1 text-sm text-gray-500">Clique em um horário livre para bloqueá-lo por 30 minutos.</p>
             </div>
             <div class="mt-3 flex flex-wrap gap-3 text-xs text-gray-600 sm:mt-0" aria-label="Legenda">
                 <span class="flex items-center gap-1"><span class="h-3 w-3 rounded bg-white border border-indigo-300"></span>Livre</span>

@@ -26,7 +26,7 @@ class ProfessionalDashboardScheduleTest extends TestCase
         $professional->workPeriods()->create([
             'weekday' => 1,
             'start_time' => '09:00',
-            'end_time' => '10:00',
+            'end_time' => '10:30',
         ]);
         Appointment::create([
             'professional_id' => $professional->id,
@@ -39,8 +39,8 @@ class ProfessionalDashboardScheduleTest extends TestCase
         ]);
         $professional->timeBlocks()->create([
             'date' => '2026-08-10',
-            'start_time' => '09:15',
-            'end_time' => '09:30',
+            'start_time' => '10:00',
+            'end_time' => '10:30',
             'reason' => 'Pausa',
         ]);
 
@@ -51,7 +51,7 @@ class ProfessionalDashboardScheduleTest extends TestCase
         $response->assertOk()
             ->assertSee('Horários de hoje')
             ->assertSee('value="09:00"', false)
-            ->assertSee('09:15 — Bloqueado: Pausa')
+            ->assertSee('10:00 — Bloqueado: Pausa')
             ->assertSee('09:30 — Ocupado: Ana');
     }
 
@@ -67,7 +67,7 @@ class ProfessionalDashboardScheduleTest extends TestCase
                 'date' => '2026-08-10',
                 'block_type' => 'partial',
                 'start_time' => '09:00',
-                'end_time' => '09:15',
+                'end_time' => '09:30',
                 'reason' => 'Bloqueado pelo painel',
             ]);
 
@@ -76,7 +76,7 @@ class ProfessionalDashboardScheduleTest extends TestCase
             'professional_id' => $professional->id,
             'date' => '2026-08-10',
             'start_time' => '09:00:00',
-            'end_time' => '09:15:00',
+            'end_time' => '09:30:00',
         ]);
     }
 
@@ -100,7 +100,7 @@ class ProfessionalDashboardScheduleTest extends TestCase
             ->post(route('professional.time-blocks.store'), [
                 'date' => '2026-08-10',
                 'block_type' => 'partial',
-                'start_time' => '09:15',
+                'start_time' => '09:00',
                 'end_time' => '09:30',
             ]);
 
