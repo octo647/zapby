@@ -115,6 +115,26 @@ class ProfessionalDashboardScheduleTest extends TestCase
         ]);
     }
 
+    public function test_time_blocks_page_displays_block_times_instead_of_the_year(): void
+    {
+        Carbon::setTestNow('2026-08-10 08:00:00');
+        $professional = $this->professional();
+        $professional->timeBlocks()->create([
+            'date' => '2026-08-11',
+            'start_time' => '09:00',
+            'end_time' => '10:30',
+            'reason' => 'Compromisso',
+        ]);
+
+        $this->withoutMiddleware(CheckSubscription::class);
+        $response = $this->actingAs($professional, 'professional')
+            ->get(route('professional.time-blocks'));
+
+        $response->assertOk()
+            ->assertSee('09:00 - 10:30')
+            ->assertDontSee('2026- - 2026-');
+    }
+
     public function test_professional_cannot_block_over_an_appointment(): void
     {
         Carbon::setTestNow('2026-08-10 08:00:00');

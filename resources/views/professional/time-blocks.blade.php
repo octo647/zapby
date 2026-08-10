@@ -169,13 +169,17 @@
                                 </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                @if($block->start_time === '00:00:00' && $block->end_time === '23:59:00')
+                                @php
+                                    $startTime = $block->start_time->format('H:i');
+                                    $endTime = $block->end_time->format('H:i');
+                                @endphp
+                                @if($startTime === '00:00' && $endTime === '23:59')
                                     <span class="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full font-medium">
                                         🚫 Dia Inteiro
                                     </span>
                                 @else
                                     <div class="text-sm text-gray-900">
-                                        {{ substr($block->start_time, 0, 5) }} - {{ substr($block->end_time, 0, 5) }}
+                                        {{ $startTime }} - {{ $endTime }}
                                     </div>
                                 @endif
                             </td>
