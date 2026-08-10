@@ -12,6 +12,7 @@ const __dirname = path.dirname(__filename)
 const COMMANDS_FILE = "/var/www/zapby/storage/app/whatsapp_commands.json"
 const CONTACTS_FILE = "/var/www/zapby/storage/app/whatsapp_contacts.json"
 const SESSIONS_FILE = "/var/www/zapby/storage/app/whatsapp_sessions.json"
+const SESSION_TTL_MS = 60 * 60 * 1000 // 1 hora
 
 // Configurações de retry
 const MAX_RETRIES = 3
@@ -75,30 +76,58 @@ async function sendMessageWithRetry(sock, remoteJid, message, retries = 0) {
 }
 
 function loadSessions() {
+    sessions.clear();
+
     try {
         if (fs.existsSync(SESSIONS_FILE)) {
             const data = JSON.parse(fs.readFileSync(SESSIONS_FILE, 'utf8'));
-            Object.entries(data).forEach(([phone, session]) => {
-                sessions.set(phone, session);
-            });
-            console.log(`📂 ${sessions.size} sessões carregadas`);
+            const abandonedSessions = Object.keys(data).length;
+
+            // O arquivo guarda apenas fluxos transitórios de agendamento. Após
+            // reiniciar, nenhum deles deve ser restaurado: ainda não existe uma
+            // reserva até a confirmação final e o usuário pode iniciar de novo.
+            if (abandonedSessions > 0) {
+                console.log(`🧹 ${abandonedSessions} sessões interrompidas removidas na inicialização`);
+                saveSessions();
+            }
+
+            console.log('📂 Bot iniciado sem sessões de agendamento pendentes');
         }
     } catch (error) {
         console.error('❌ Erro ao carregar sessões:', error);
+        preserveInvalidSessionsFile();
+        saveSessions();
     }
 }
 
 function saveSessions() {
+    const temporaryFile = `${SESSIONS_FILE}.${process.pid}.tmp`;
+
     try {
         const data = Object.fromEntries(sessions);
-        fs.writeFileSync(SESSIONS_FILE, JSON.stringify(data, null, 2));
+        fs.writeFileSync(temporaryFile, JSON.stringify(data, null, 2), 'utf8');
+        fs.renameSync(temporaryFile, SESSIONS_FILE);
     } catch (error) {
         console.error('❌ Erro ao salvar sessões:', error);
+
+        try {
+            if (fs.existsSync(temporaryFile)) fs.unlinkSync(temporaryFile);
+        } catch (cleanupError) {
+            console.error('❌ Erro ao remover arquivo temporário de sessões:', cleanupError);
+        }
     }
 }
 
 function getSession(phone) {
-    return sessions.get(phone) || null;
+    const session = sessions.get(phone) || null;
+
+    if (session && isSessionExpired(session)) {
+        console.log(`🧹 Sessão expirada para ${phone}, limpando...`);
+        clearSession(phone);
+        return null;
+    }
+
+    return session;
 }
 
 function setSession(phone, data) {
@@ -109,6 +138,26 @@ function setSession(phone, data) {
 function clearSession(phone) {
     sessions.delete(phone);
     saveSessions();
+}
+
+function isSessionExpired(session) {
+    if (!session || !session.updated_at) return true;
+
+    const updatedAt = Date.parse(session.updated_at);
+    return !Number.isFinite(updatedAt) || Date.now() - updatedAt > SESSION_TTL_MS;
+}
+
+function preserveInvalidSessionsFile() {
+    if (!fs.existsSync(SESSIONS_FILE)) return;
+
+    const backupFile = `${SESSIONS_FILE}.invalid-${Date.now()}`;
+
+    try {
+        fs.renameSync(SESSIONS_FILE, backupFile);
+        console.error(`⚠️ Arquivo de sessões inválido preservado em ${backupFile}`);
+    } catch (error) {
+        console.error('❌ Não foi possível preservar o arquivo de sessões inválido:', error);
+    }
 }
 
 // Funções auxiliares para mensagens interativas
@@ -881,16 +930,10 @@ async function main() {
                 const session = getSession(phone);
                 
                 if (session && session.state === 'booking') {
-                    // Verificar se a sessão está válida e não muito antiga (mais de 1 hora)
-                    const sessionAge = Date.now() - new Date(session.updated_at).getTime();
-                    if (sessionAge > 3600000) { // 1 hora em ms
-                        console.log(`⚠️ Sessão expirada para ${phone}, limpando...`);
-                        clearSession(phone);
-                    } else {
-                        // Usuário está em processo de agendamento
-                        await processBookingFlow(sock, msg.key.remoteJid, phone, name, messageText, session);
-                        continue;
-                    }
+                    // Usuário está em processo de agendamento. Sessões expiradas
+                    // já são descartadas por getSession().
+                    await processBookingFlow(sock, msg.key.remoteJid, phone, name, messageText, session);
+                    continue;
                 }
                 
                 // Verificar se há sessão de seleção de profissional
