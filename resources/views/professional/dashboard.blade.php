@@ -210,7 +210,7 @@
                             <p class="font-semibold text-gray-900">{{ $appointment->client_name }}</p>
                             <p class="text-sm text-gray-600">
                                 🕐 {{ \Carbon\Carbon::parse($appointment->time)->format('H:i') }} 
-                                - {{ $appointment->duration }} min
+                                - {{ $appointment->service }}
                             </p>
                         </div>
                     </div>
