@@ -150,11 +150,12 @@
                                 Horário
                             </th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Motivo
-                            </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Ações
                             </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Motivo
+                            </th>
+                            
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
@@ -183,11 +184,6 @@
                                     </div>
                                 @endif
                             </td>
-                            <td class="px-6 py-4">
-                                <div class="text-sm text-gray-900">
-                                    {{ $block->reason ?: '-' }}
-                                </div>
-                            </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm">
                                 <form method="POST" action="{{ route('professional.time-blocks.destroy', $block->id) }}" class="inline">
                                     @csrf
@@ -201,6 +197,12 @@
                                     </button>
                                 </form>
                             </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm text-gray-900">
+                                    {{ $block->reason ?: '-' }}
+                                </div>
+                            </td>
+                            
                         </tr>
                         @endforeach
                     </tbody>
