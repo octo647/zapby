@@ -3,6 +3,14 @@
 @section('title', 'Painel')
 
 @section('content')
+@php
+    $appointmentStatusLabels = [
+        'pending' => 'Pendente',
+        'confirmed' => 'Confirmado',
+        'completed' => 'Concluído',
+        'cancelled' => 'Cancelado',
+    ];
+@endphp
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     
     <!-- Onboarding Banner -->
@@ -147,7 +155,7 @@
                     </div>
                     <div class="flex items-center gap-3">
                         <span class="px-4 py-2 bg-green-100 text-green-800 text-sm font-medium rounded-full">
-                            {{ $appointment->status }}
+                            {{ $appointmentStatusLabels[$appointment->status] ?? $appointment->status }}
                         </span>
                         @php
                             // Usa phone_number se existir, senão tenta client_whatsapp
@@ -196,7 +204,7 @@
                     <div class="flex items-center gap-4">
                         <div class="text-center bg-indigo-100 rounded-lg p-3">
                             <p class="text-2xl font-bold text-indigo-600">{{ \Carbon\Carbon::parse($appointment->date)->format('d') }}</p>
-                            <p class="text-xs text-gray-600">{{ \Carbon\Carbon::parse($appointment->date)->format('M') }}</p>
+                            <p class="text-xs text-gray-600">{{ \Carbon\Carbon::parse($appointment->date)->locale('pt_BR')->translatedFormat('M') }}</p>
                         </div>
                         <div>
                             <p class="font-semibold text-gray-900">{{ $appointment->client_name }}</p>
@@ -207,7 +215,7 @@
                         </div>
                     </div>
                     <span class="px-3 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                        {{ \Carbon\Carbon::parse($appointment->date->format('Y-m-d') . ' ' . $appointment->time)->diffForHumans() }}
+                        {{ \Carbon\Carbon::parse($appointment->date->format('Y-m-d') . ' ' . $appointment->time)->locale('pt_BR')->diffForHumans() }}
                     </span>
                 </div>
                 @endforeach

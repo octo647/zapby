@@ -55,6 +55,38 @@ class ProfessionalDashboardScheduleTest extends TestCase
             ->assertSee('09:30 — Ocupado: Ana');
     }
 
+    public function test_dashboard_translates_appointment_status_and_upcoming_month(): void
+    {
+        Carbon::setTestNow('2026-08-31 08:00:00');
+        $professional = $this->professional();
+        Appointment::create([
+            'professional_id' => $professional->id,
+            'client_name' => 'Ana',
+            'client_whatsapp' => '5532999999999',
+            'date' => '2026-08-31',
+            'time' => '09:00',
+            'duration' => 30,
+            'status' => 'pending',
+        ]);
+        Appointment::create([
+            'professional_id' => $professional->id,
+            'client_name' => 'Bruno',
+            'client_whatsapp' => '5532888888888',
+            'date' => '2026-09-01',
+            'time' => '10:00',
+            'duration' => 30,
+            'status' => 'confirmed',
+        ]);
+
+        $this->withoutMiddleware(CheckSubscription::class);
+        $response = $this->actingAs($professional, 'professional')
+            ->get(route('professional.dashboard'));
+
+        $response->assertOk()
+            ->assertSee('Pendente')
+            ->assertSee('set');
+    }
+
     public function test_professional_can_block_a_free_slot_from_dashboard(): void
     {
         Carbon::setTestNow('2026-08-10 08:00:00');
