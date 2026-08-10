@@ -66,6 +66,7 @@ class ProfessionalDashboardScheduleTest extends TestCase
             'date' => '2026-08-31',
             'time' => '09:00',
             'duration' => 30,
+            'service' => 'Corte de cabelo',
             'status' => 'pending',
         ]);
         Appointment::create([
@@ -84,6 +85,8 @@ class ProfessionalDashboardScheduleTest extends TestCase
 
         $response->assertOk()
             ->assertSee('Pendente')
+            ->assertSee('Corte de cabelo')
+            ->assertDontSee('30 minutos')
             ->assertSee('set');
     }
 
