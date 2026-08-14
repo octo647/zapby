@@ -26,13 +26,16 @@ class AsaasWebhookController extends Controller
             $expectedWebhookToken = config('services.asaas.webhook_token');
             
             // Validate that the webhook has the correct token for Zapby
-            if ($expectedWebhookToken && $webhookToken !== $expectedWebhookToken) {
-                Log::warning('Zapby Webhook: Invalid or missing token (possibly from another system)', [
-                    'received_token' => $webhookToken ? substr($webhookToken, 0, 15).'...' : 'null',
-                    'expected_prefix' => $expectedWebhookToken ? substr($expectedWebhookToken, 0, 15).'...' : 'not configured',
+            if (!is_string($expectedWebhookToken)
+                || $expectedWebhookToken === ''
+                || !is_string($webhookToken)
+                || !hash_equals($expectedWebhookToken, $webhookToken)) {
+                Log::warning('Zapby Webhook: Invalid or missing token; event ignored', [
+                    'token_configured' => is_string($expectedWebhookToken) && $expectedWebhookToken !== '',
+                    'token_received' => is_string($webhookToken) && $webhookToken !== '',
                 ]);
                 // Return success to avoid retry, but don't process
-                return response()->json(['success' => true, 'message' => 'Token mismatch - ignored'], 200);
+                return response('OK', 200);
             }
 
             // Get event type
@@ -62,9 +65,9 @@ class AsaasWebhookController extends Controller
                     Log::info('Asaas Webhook: Unhandled event type', ['event' => $event]);
             }
 
-            return response()->json(['success' => true], 200);
+            return response('OK', 200);
             
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             // Log error but return 200 to avoid Asaas retrying
             Log::error('Asaas Webhook: Exception occurred', [
                 'error' => $e->getMessage(),
@@ -74,10 +77,7 @@ class AsaasWebhookController extends Controller
             ]);
             
             // Return 200 to prevent Asaas from penalizing us
-            return response()->json([
-                'success' => false,
-                'message' => 'Error processed but acknowledged'
-            ], 200);
+            return response('OK', 200);
         }
     }
 
@@ -107,7 +107,12 @@ class AsaasWebhookController extends Controller
         $subscriptionId = $request->input('payment.subscription');
         
         if (!$subscriptionId) {
-            Log::warning('Asaas Webhook: Payment without subscription ID');
+            Log::info('Asaas Webhook: Unlinked financial movement ignored', [
+                'event' => $request->input('event'),
+                'payment_id' => $request->input('payment.id'),
+                'external_reference' => $request->input('payment.externalReference'),
+                'payment_link' => $request->input('payment.paymentLink'),
+            ]);
             return;
         }
 
