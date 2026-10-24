@@ -3,6 +3,9 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpKernel\Exception\HttpException;
+use Illuminate\Support\Facades\Auth;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -33,5 +36,18 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        // Token expirado no logout: encerra a sessão mesmo assim em vez de exibir o 419.
+        $exceptions->render(function (HttpException $e, Request $request) {
+            if ($e->getStatusCode() !== 419 || ! $request->routeIs('professional.logout')) {
+                return null;
+            }
+
+            Auth::guard('professional')->logout();
+            if ($request->hasSession()) {
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+            }
+
+            return redirect()->route('professional.login');
+        });
     })->create();
