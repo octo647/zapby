@@ -228,6 +228,16 @@
                 @endif
 
                 <div>
+                    <span class="text-sm text-gray-500">Indicado por:</span>
+                    @if($professional->seller)
+                        <span class="ml-2 font-semibold text-gray-900">{{ $professional->seller->name }}</span>
+                        <span class="ml-1 font-mono text-sm text-gray-600">({{ $professional->seller->code }})</span>
+                    @else
+                        <span class="ml-2 text-gray-500">Não informado</span>
+                    @endif
+                </div>
+
+                <div>
                     <span class="text-sm text-gray-500">Duração Padrão:</span>
                     <span class="ml-2 font-semibold text-gray-900">{{ $professional->default_duration }} minutos</span>
                 </div>

@@ -28,6 +28,9 @@
                         <a href="{{ route('admin.dashboard') }}" class="px-3 py-2 rounded-md text-sm font-medium {{ request()->routeIs('admin.dashboard') ? 'bg-white bg-opacity-20 text-white' : 'text-white text-opacity-90 hover:bg-white hover:bg-opacity-10' }}">
                             <i class="fas fa-chart-line mr-1"></i> Dashboard
                         </a>
+                        <a href="{{ route('admin.sellers') }}" class="px-3 py-2 rounded-md text-sm font-medium {{ request()->routeIs('admin.sellers*') ? 'bg-white bg-opacity-20 text-white' : 'text-white text-opacity-90 hover:bg-white hover:bg-opacity-10' }}">
+                            <i class="fas fa-user-tag mr-1"></i> Vendedores
+                        </a>
                         <a href="{{ route('professional.dashboard') }}" class="px-3 py-2 rounded-md text-sm font-medium text-white text-opacity-90 hover:bg-white hover:bg-opacity-10">
                             <i class="fas fa-user-circle mr-1"></i> Meu Painel
                         </a>
@@ -68,6 +71,9 @@
             <div class="px-2 pt-2 pb-3 space-y-1">
                 <a href="{{ route('admin.dashboard') }}" class="block px-3 py-2 rounded-md text-base font-medium {{ request()->routeIs('admin.dashboard') ? 'bg-white bg-opacity-20 text-white' : 'text-white text-opacity-90 hover:bg-white hover:bg-opacity-10' }}">
                     <i class="fas fa-chart-line mr-2"></i> Dashboard
+                </a>
+                <a href="{{ route('admin.sellers') }}" class="block px-3 py-2 rounded-md text-base font-medium {{ request()->routeIs('admin.sellers*') ? 'bg-white bg-opacity-20 text-white' : 'text-white text-opacity-90 hover:bg-white hover:bg-opacity-10' }}">
+                    <i class="fas fa-user-tag mr-2"></i> Vendedores
                 </a>
                 <a href="{{ route('professional.dashboard') }}" class="block px-3 py-2 rounded-md text-base font-medium text-white text-opacity-90 hover:bg-white hover:bg-opacity-10">
                     <i class="fas fa-user-circle mr-2"></i> Meu Painel

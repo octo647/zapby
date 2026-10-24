@@ -108,7 +108,7 @@ class AdminDashboardController extends Controller
 
     public function show(Professional $professional)
     {
-        $professional->load(['subscription', 'appointments' => function($query) {
+        $professional->load(['subscription', 'seller', 'appointments' => function($query) {
             $query->orderBy('date', 'desc')->orderBy('time', 'desc')->take(10);
         }]);
         
