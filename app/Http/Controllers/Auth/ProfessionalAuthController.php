@@ -86,7 +86,19 @@ class ProfessionalAuthController extends Controller
             'whatsapp' => 'required|string',
             'profession' => 'required|string|max:255',
             'password' => 'required|string|min:6|confirmed',
+            'referral_code' => 'nullable|string|max:30',
         ]);
+
+        $seller = null;
+        if (filled($request->referral_code)) {
+            $seller = \App\Models\Seller::where('code', \App\Models\Seller::normalizeCode($request->referral_code))
+                ->where('active', true)->first();
+            if (!$seller) {
+                return back()->withErrors([
+                    'referral_code' => 'Código de indicação inválido.',
+                ])->withInput();
+            }
+        }
         
         // Limpar CPF e WhatsApp (remover máscaras)
         $cpf = preg_replace('/[^0-9]/', '', $request->cpf);
@@ -132,6 +144,7 @@ class ProfessionalAuthController extends Controller
             'whatsapp' => $whatsapp,
             'profession' => $request->profession,
             'access_key' => null,
+            'seller_id' => $seller?->id,
             'password' => Hash::make($request->password),
             'whatsapp_verified' => true,
             'subscription_status' => 'trial',

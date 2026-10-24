@@ -129,6 +129,20 @@
                 >
             </div>
 
+            <div class="mb-6">
+                <label for="referral_code" class="block text-sm font-medium text-gray-700 mb-2">
+                    🎁 Código de indicação (opcional)
+                </label>
+                <input
+                    type="text"
+                    id="referral_code"
+                    name="referral_code"
+                    value="{{ old('referral_code', request('ref')) }}"
+                    placeholder="Quem indicou você?"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg uppercase focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                >
+            </div>
+
             <button 
                 type="submit"
                 class="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 px-6 rounded-lg font-semibold hover:from-green-600 hover:to-green-700 transition duration-200 shadow-lg"

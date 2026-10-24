@@ -14,7 +14,9 @@ class PublicAgendaController extends Controller
     public function show(Professional $professional)
     {
         if (!$professional->isActive()) {
-            abort(404, 'Profissional não encontrado ou inativo');
+            return response()
+                ->view('public.unavailable')
+                ->header('X-Robots-Tag', 'noindex, follow');
         }
 
         $message = rawurlencode($professional->access_key);
@@ -30,6 +32,10 @@ class PublicAgendaController extends Controller
      */
     public function store(Professional $professional)
     {
+        if (!$professional->isActive()) {
+            return redirect()->route('agenda.show', ['professional' => $professional->slug]);
+        }
+
         return redirect()->route('agenda.show', ['professional' => $professional->slug])
             ->with('success', 'Para agendar, fale com o profissional pelo WhatsApp.');
     }

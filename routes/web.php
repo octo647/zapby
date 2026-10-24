@@ -134,6 +134,9 @@ Route::prefix('admin')->middleware(['admin'])->group(function () {
     Route::post('/professionals/{professional}/toggle-admin', [AdminDashboardController::class, 'toggleAdmin'])->name('admin.professionals.toggle-admin');
     Route::post('/professionals/{professional}/update-status', [AdminDashboardController::class, 'updateSubscriptionStatus'])->name('admin.professionals.update-status');
     Route::post('/professionals/{professional}/extend-trial', [AdminDashboardController::class, 'extendTrial'])->name('admin.professionals.extend-trial');
+    Route::get('/sellers', [\App\Http\Controllers\AdminSellerController::class, 'index'])->name('admin.sellers');
+    Route::post('/sellers', [\App\Http\Controllers\AdminSellerController::class, 'store'])->name('admin.sellers.store');
+    Route::post('/sellers/{seller}/toggle', [\App\Http\Controllers\AdminSellerController::class, 'toggle'])->name('admin.sellers.toggle');
 });
 
 // Agenda pública - profissional por slug

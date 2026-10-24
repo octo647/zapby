@@ -37,6 +37,7 @@ class Professional extends Authenticatable
         'access_key',
         'onboarding_completed',
         'is_admin',
+        'seller_id',
         'schedule_mode',
     ];
 
@@ -51,6 +52,11 @@ class Professional extends Authenticatable
 	'is_admin' => 'boolean',
 	'schedule_mode' => 'string',
     ];
+    public function seller()
+    {
+        return $this->belongsTo(Seller::class);
+    }
+
     public static function generateAccessKey(string $profession, int $id): string
     {
         return static::accessKeyPrefixForProfession($profession) . $id;

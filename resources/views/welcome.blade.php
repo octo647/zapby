@@ -34,7 +34,7 @@
     <link rel="apple-touch-icon" href="/logo_fundo_branco.png">
 
     <script src="https://cdn.tailwindcss.com"></script>
-  
+
 
 <script type="application/ld+json">
 {
